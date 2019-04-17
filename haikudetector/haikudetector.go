@@ -55,7 +55,7 @@ func ParagraphSyllables(paragraph string) []uint {
 				total++
 			*/
 		}
-		log.Printf("Total for [%+v]: %v", sentence, total)
+		//log.Printf("Total for [%+v]: %v", sentence, total)
 		syllables = append(syllables, total)
 	}
 	return syllables

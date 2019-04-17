@@ -54,18 +54,21 @@ func main() {
 		Token:  cfg.ConsumerKey,
 		Secret: cfg.ConsumerSecret,
 	}
-	log.Printf("consumer is %+v", consumerKeys)
+	token := oauth.Credentials{
+		Token:  cfg.AccessToken,
+		Secret: cfg.AccessSecret,
+	}
 	client := oauth.Client{
 		TemporaryCredentialRequestURI: "https://api.twitter.com/oauth/request_token",
 		ResourceOwnerAuthorizationURI: "https://api.twitter.com/oauth/authorize",
 		TokenRequestURI:               "https://api.twitter.com/oauth/access_token",
-		Credentials: oauth.Credentials{
-			Token:  cfg.AccessToken,
-			Secret: cfg.AccessSecret,
-		}}
+		Credentials:                   consumerKeys,
+	}
 
 	httpClient := http.Client{}
-	resp, err := client.Get(&httpClient, &consumerKeys, "https://stream.twitter.com/1.1/statuses/sample.json", url.Values{})
+	//resp, err := client.Get(&httpClient, &token, "https://stream.twitter.com/1.1/statuses/sample.json", url.Values{})
+	//resp, err := client.Post(&httpClient, &token, "https://stream.twitter.com/1.1/statuses/filter.json", url.Values{"lang": []string{"en"}, "track": []string{"the", "be", "to", "of", "and", "in", "that", "have", "I", "it", "for", "not"}, "tweet_mode": []string{"extended"}})
+	resp, err := client.Post(&httpClient, &token, "https://stream.twitter.com/1.1/statuses/filter.json", url.Values{"lang": []string{"en"}, "track": []string{"haiku"}, "tweet_mode": []string{"extended"}})
 	if err != nil {
 		panic(err)
 	}
@@ -83,13 +86,16 @@ func main() {
 			panic(err)
 		}
 		t := anaconda.Tweet{}
-		log.Printf("Got %+v", string(line))
+		//log.Printf("Got %+v", string(line))
 		err = json.Unmarshal(line, &t)
 		if err != nil {
 			continue
 		}
+		if t.FullText == "" || t.Lang != "en" {
+			continue
+		}
 		syllables := haikudetector.ParagraphSyllables(t.FullText)
-		log.Printf("%+v %v: %v", syllables, t.User.ScreenName, t.FullText)
+		log.Printf("[%v] %+v %v: %v", syllables, t.Lang, t.User.ScreenName, t.FullText)
 	}
 
 }
