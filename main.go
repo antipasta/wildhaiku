@@ -4,12 +4,14 @@ import (
 	"bufio"
 	"encoding/json"
 	"flag"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
 
 	"github.com/ChimeraCoder/anaconda"
+	"github.com/antipasta/tweetstream/haikudetector"
 	"github.com/gomodule/oauth1/oauth"
 )
 
@@ -52,6 +54,7 @@ func main() {
 		Token:  cfg.ConsumerKey,
 		Secret: cfg.ConsumerSecret,
 	}
+	log.Printf("consumer is %+v", consumerKeys)
 	client := oauth.Client{
 		TemporaryCredentialRequestURI: "https://api.twitter.com/oauth/request_token",
 		ResourceOwnerAuthorizationURI: "https://api.twitter.com/oauth/authorize",
@@ -66,19 +69,27 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	if resp.StatusCode != 200 {
+		panic(resp.Status)
+	}
 	defer resp.Body.Close()
 	buf := bufio.NewReader(resp.Body)
 	for {
 		line, err := buf.ReadBytes('\n')
-		if err != nil || len(line) == 0 {
+		if err == io.EOF || len(line) == 0 {
 			continue
 		}
+		if err != nil {
+			panic(err)
+		}
 		t := anaconda.Tweet{}
+		log.Printf("Got %+v", string(line))
 		err = json.Unmarshal(line, &t)
 		if err != nil {
 			continue
 		}
-		log.Printf("%v: %v", t.User.ScreenName, t.FullText)
+		syllables := haikudetector.ParagraphSyllables(t.FullText)
+		log.Printf("%+v %v: %v", syllables, t.User.ScreenName, t.FullText)
 	}
 
 }
