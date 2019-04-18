@@ -43,8 +43,25 @@ func LoadConfig(path string) (*StreamerConfig, error) {
 func init() {
 	flag.StringVar(&flagConfigPath, "config", "config.json", "Path to config file")
 }
-
 func main() {
+	/*
+		flag.Parse()
+		cmu, err := haikudetector.LoadCMUCorpus()
+		if err != nil {
+			panic(err)
+		}
+		syl := cmu.SentenceSyllables("I am a haiku, or at least I think I am maybe I am wrong I can potentially keep going too")
+		test := syl.Subdivide(5, 7, 5)
+		log.Printf("hey check it %+v", test)
+		if err != nil {
+			panic(err)
+		}
+	*/
+	TwitterLoop()
+	//log.Printf("hey %v", syl)
+}
+
+func TwitterLoop() {
 	flag.Parse()
 	cfg, err := LoadConfig(flagConfigPath)
 	if err != nil {
@@ -64,11 +81,19 @@ func main() {
 		TokenRequestURI:               "https://api.twitter.com/oauth/access_token",
 		Credentials:                   consumerKeys,
 	}
+	cmu, err := haikudetector.LoadCMUCorpus()
+	if err != nil {
+		panic(err)
+	}
+	syl := cmu.ParagraphSyllables("A summer river being crossed how pleasing with sandals in my hands!")
+	if err != nil {
+		panic(err)
+	}
+	log.Printf("hey %v", syl)
 
 	httpClient := http.Client{}
-	//resp, err := client.Get(&httpClient, &token, "https://stream.twitter.com/1.1/statuses/sample.json", url.Values{})
-	//resp, err := client.Post(&httpClient, &token, "https://stream.twitter.com/1.1/statuses/filter.json", url.Values{"lang": []string{"en"}, "track": []string{"the", "be", "to", "of", "and", "in", "that", "have", "I", "it", "for", "not"}, "tweet_mode": []string{"extended"}})
-	resp, err := client.Post(&httpClient, &token, "https://stream.twitter.com/1.1/statuses/filter.json", url.Values{"lang": []string{"en"}, "track": []string{"haiku"}, "tweet_mode": []string{"extended"}})
+	resp, err := client.Post(&httpClient, &token, "https://stream.twitter.com/1.1/statuses/filter.json", url.Values{"lang": []string{"en"}, "track": []string{"the", "be", "to", "of", "and", "in", "that", "have", "I", "it", "for", "not"}, "tweet_mode": []string{"extended"}})
+	//resp, err := client.Post(&httpClient, &token, "https://stream.twitter.com/1.1/statuses/filter.json", url.Values{"lang": []string{"en"}, "track": []string{"haiku"}, "tweet_mode": []string{"extended"}})
 	if err != nil {
 		panic(err)
 	}
@@ -94,8 +119,14 @@ func main() {
 		if t.FullText == "" || t.Lang != "en" {
 			continue
 		}
-		syllables := haikudetector.ParagraphSyllables(t.FullText)
-		log.Printf("[%v] %+v %v: %v", syllables, t.Lang, t.User.ScreenName, t.FullText)
+		if t.RetweetedStatus != nil {
+			t = *t.RetweetedStatus
+		}
+		syl := cmu.SentenceSyllables(t.FullText)
+		foundHaiku := syl.Subdivide(5, 7, 5)
+		if len(foundHaiku) > 0 {
+			log.Printf("[%v] %v: %v", foundHaiku, t.User.ScreenName, t.FullText)
+		}
 	}
 
 }
