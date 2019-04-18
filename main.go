@@ -125,7 +125,7 @@ func TwitterLoop() {
 		syl := cmu.SentenceSyllables(t.FullText)
 		foundHaiku := syl.Subdivide(5, 7, 5)
 		if len(foundHaiku) > 0 {
-			log.Printf("[%v] %v: %v", foundHaiku, t.User.ScreenName, t.FullText)
+			log.Printf("[%s] https://twitter.com/%v/status/%v %v [%+v]", foundHaiku, t.User.ScreenName, t.IdStr, t.FullText, syl.Nouns())
 		}
 	}
 
