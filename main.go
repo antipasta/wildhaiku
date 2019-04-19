@@ -11,8 +11,9 @@ import (
 	"net/url"
 
 	"github.com/ChimeraCoder/anaconda"
-	"github.com/antipasta/tweetstream/haikudetector"
+	"github.com/antipasta/wildhaiku/haikudetector"
 	"github.com/gomodule/oauth1/oauth"
+	"github.com/gookit/color"
 )
 
 var flagConfigPath string
@@ -21,10 +22,11 @@ type TweetStreamer struct {
 }
 
 type StreamerConfig struct {
-	ConsumerKey    string
-	ConsumerSecret string
-	AccessToken    string
-	AccessSecret   string
+	ConsumerKey      string
+	ConsumerSecret   string
+	AccessToken      string
+	AccessSecret     string
+	TrackingKeywords []string
 }
 
 func LoadConfig(path string) (*StreamerConfig, error) {
@@ -43,22 +45,24 @@ func LoadConfig(path string) (*StreamerConfig, error) {
 func init() {
 	flag.StringVar(&flagConfigPath, "config", "config.json", "Path to config file")
 }
+func multiTest() {
+	cmu, err := haikudetector.LoadCMUCorpus()
+	if err != nil {
+		panic(err)
+	}
+	//text := "here is some bad text. it is not a haiku. haiku starting here, such a bold test for this app. would love if it worked"
+	text := "here is one haiku. it is an okay haiku. another is here, such a bold test for this app. would love if it worked"
+	paragraph := cmu.ToSyllableParagraph(text)
+	foundHaikus := paragraph.Subdivide(5, 7, 5)
+	if len(foundHaikus) > 0 {
+		for _, haiku := range foundHaikus {
+			log.Printf("Found haiku %+v", haiku)
+		}
+	}
+
+}
 func main() {
-	/*
-		flag.Parse()
-		cmu, err := haikudetector.LoadCMUCorpus()
-		if err != nil {
-			panic(err)
-		}
-		syl := cmu.SentenceSyllables("I am a haiku, or at least I think I am maybe I am wrong I can potentially keep going too")
-		test := syl.Subdivide(5, 7, 5)
-		log.Printf("hey check it %+v", test)
-		if err != nil {
-			panic(err)
-		}
-	*/
 	TwitterLoop()
-	//log.Printf("hey %v", syl)
 }
 
 func TwitterLoop() {
@@ -85,15 +89,9 @@ func TwitterLoop() {
 	if err != nil {
 		panic(err)
 	}
-	syl := cmu.ParagraphSyllables("A summer river being crossed how pleasing with sandals in my hands!")
-	if err != nil {
-		panic(err)
-	}
-	log.Printf("hey %v", syl)
 
 	httpClient := http.Client{}
-	resp, err := client.Post(&httpClient, &token, "https://stream.twitter.com/1.1/statuses/filter.json", url.Values{"lang": []string{"en"}, "track": []string{"the", "be", "to", "of", "and", "in", "that", "have", "I", "it", "for", "not"}, "tweet_mode": []string{"extended"}})
-	//resp, err := client.Post(&httpClient, &token, "https://stream.twitter.com/1.1/statuses/filter.json", url.Values{"lang": []string{"en"}, "track": []string{"haiku"}, "tweet_mode": []string{"extended"}})
+	resp, err := client.Post(&httpClient, &token, "https://stream.twitter.com/1.1/statuses/filter.json", url.Values{"lang": []string{"en"}, "track": cfg.TrackingKeywords, "tweet_mode": []string{"extended"}})
 	if err != nil {
 		panic(err)
 	}
@@ -122,10 +120,14 @@ func TwitterLoop() {
 		if t.RetweetedStatus != nil {
 			t = *t.RetweetedStatus
 		}
-		syl := cmu.SentenceSyllables(t.FullText)
-		foundHaiku := syl.Subdivide(5, 7, 5)
-		if len(foundHaiku) > 0 {
-			log.Printf("[%s] https://twitter.com/%v/status/%v %v [%+v]", foundHaiku, t.User.ScreenName, t.IdStr, t.FullText, syl.Nouns())
+		paragraph := cmu.ToSyllableParagraph(t.FullText)
+		foundHaikus := paragraph.Subdivide(5, 7, 5)
+		if len(foundHaikus) > 0 {
+			log.Printf("https://twitter.com/%v/status/%v %v", t.User.ScreenName, t.IdStr, t.FullText)
+			for i, foundHaiku := range foundHaikus {
+				color.Cyan.Printf("%d. %s\n", i+1, foundHaiku)
+
+			}
 		}
 	}
 

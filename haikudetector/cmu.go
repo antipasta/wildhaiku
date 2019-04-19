@@ -57,6 +57,7 @@ type SyllableWord struct {
 	Syllables int
 }
 
+type SyllableParagraph []SyllableSentence
 type SyllableSentence []SyllableWord
 
 func (s SyllableSentence) TotalSyllables() int {
@@ -99,6 +100,18 @@ func (h Haiku) String() string {
 	return haiku.String()
 }
 
+func (p SyllableParagraph) Subdivide(sylSizes ...int) []Haiku {
+
+	haikus := []Haiku{}
+	for i := range p {
+		haiku := p[i:].ToCombinedSentence().Subdivide(sylSizes...)
+		if len(haiku) > 0 {
+			haikus = append(haikus, haiku)
+		}
+	}
+	return haikus
+}
+
 func (s SyllableSentence) Subdivide(sylSizes ...int) Haiku {
 	curSentence := [][]prose.Token{}
 	wordIndex := 0
@@ -127,30 +140,30 @@ func (s SyllableSentence) Subdivide(sylSizes ...int) Haiku {
 	return curSentence
 }
 
-func (c *CMUCorpus) ParagraphSyllables(paragraph string) []int {
-	var sentenceSyllables []int
+func (p SyllableParagraph) ToCombinedSentence() SyllableSentence {
+	combinedSentence := SyllableSentence{}
+	for _, sentence := range p {
+		combinedSentence = append(combinedSentence, sentence...)
+	}
+	return combinedSentence
 
-	/*
-		start at beginning of sentence
-		if you hit a period, reset count to 0
-		increment count by
+}
 
-	*/
-	doc, err := prose.NewDocument(paragraph)
+func (c *CMUCorpus) ToSyllableParagraph(sentence string) SyllableParagraph {
+	paragraph := SyllableParagraph{}
+	sentenceDoc, err := prose.NewDocument(sentence)
 	if err != nil {
 		log.Fatal(err)
 	}
-	for _, sentence := range doc.Sentences() {
-		total := c.SentenceSyllables(sentence.Text).TotalSyllables()
-		if total == 17 {
-		}
-		sentenceSyllables = append(sentenceSyllables, total)
+	for _, sentence := range sentenceDoc.Sentences() {
+		paragraph = append(paragraph, c.SentenceSyllables(sentence.Text))
 	}
-	return sentenceSyllables
+	return paragraph
+
 }
 
 func (c *CMUCorpus) SentenceSyllables(sentence string) SyllableSentence {
-	syllableSentence := []SyllableWord{}
+	syllableSentence := SyllableSentence{}
 	sentenceDoc, err := prose.NewDocument(sentence)
 	if err != nil {
 		log.Fatal(err)
@@ -164,8 +177,9 @@ func (c *CMUCorpus) SentenceSyllables(sentence string) SyllableSentence {
 		}
 		count, err := c.SyllableCount(v.Text)
 		if err != nil {
-			//panic(err)
-			//log.Printf("Got error on syllable count for word [%+v] %+v", v.Text, err)
+			//TODO do we just give up here? for now continuing on but thats incorrect
+			//log.Printf("Got error on syllable count for word %+v [%+v] %+v", v.Tag, v.Text, err)
+			//return SyllableSentence{}
 			break
 		}
 		total += count
