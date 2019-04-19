@@ -51,8 +51,12 @@ func multiTest() {
 		panic(err)
 	}
 	//text := "here is some bad text. it is not a haiku. haiku starting here, such a bold test for this app. would love if it worked"
-	text := "here is one haiku. it is an okay haiku. another is here, such a bold test for this app. would love if it worked"
-	paragraph := cmu.ToSyllableParagraph(text)
+	//text := "here's one haiku. it is an okay haiku. another is here, such a bold test for this app. would love if it worked"
+	//deduped := "@PokerStars What does this mean - \"The Beatles\" prize?  Is this a birthday joke on me, as I did not receive the ticket in my account?  Thanks anyway, was still a good 64th Birthday! @PokerStars "
+	//bustedencoding := "In a relationship communication is key. Getting mad at your girl bc she's expressing what upsets her is lame. Instead of flipping the situation &amp; blaming it on her, ask her where u went wrong &amp; how u can fix it. Even if it's not that deep to u, it could be a serious matter to her"
+	bustedSkippedWords := "Please don't cut back ivy too hard in your garden! At this time of year, it's fantastic nesting habitat for birds. In autumn, its flowers will be a late-season food supply for pollinators like bees, butterflies, hoverflies. Then winter berries for birds 🐝"
+
+	paragraph := cmu.ToSyllableParagraph(bustedSkippedWords)
 	foundHaikus := paragraph.Subdivide(5, 7, 5)
 	if len(foundHaikus) > 0 {
 		for _, haiku := range foundHaikus {
@@ -62,11 +66,12 @@ func multiTest() {
 
 }
 func main() {
+	flag.Parse()
+	//multiTest()
 	TwitterLoop()
 }
 
 func TwitterLoop() {
-	flag.Parse()
 	cfg, err := LoadConfig(flagConfigPath)
 	if err != nil {
 		panic(err)

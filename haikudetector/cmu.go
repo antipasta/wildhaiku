@@ -3,6 +3,7 @@ package haikudetector
 import (
 	"bytes"
 	"fmt"
+	"html"
 	"io/ioutil"
 	"log"
 	"strings"
@@ -102,11 +103,16 @@ func (h Haiku) String() string {
 
 func (p SyllableParagraph) Subdivide(sylSizes ...int) []Haiku {
 
+	haikuMap := map[string]Haiku{}
 	haikus := []Haiku{}
 	for i := range p {
 		haiku := p[i:].ToCombinedSentence().Subdivide(sylSizes...)
+		haikuStr := fmt.Sprintf("%s", haiku)
 		if len(haiku) > 0 {
-			haikus = append(haikus, haiku)
+			if _, exists := haikuMap[haikuStr]; !exists {
+				haikuMap[haikuStr] = haiku
+				haikus = append(haikus, haiku)
+			}
 		}
 	}
 	return haikus
@@ -151,6 +157,7 @@ func (p SyllableParagraph) ToCombinedSentence() SyllableSentence {
 
 func (c *CMUCorpus) ToSyllableParagraph(sentence string) SyllableParagraph {
 	paragraph := SyllableParagraph{}
+	sentence = html.UnescapeString(sentence)
 	sentenceDoc, err := prose.NewDocument(sentence)
 	if err != nil {
 		log.Fatal(err)
