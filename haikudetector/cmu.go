@@ -16,9 +16,9 @@ type CMUCorpus struct {
 	Dict map[string][]string
 }
 
-func LoadCMUCorpus() (*CMUCorpus, error) {
+func LoadCMUCorpus(path string) (*CMUCorpus, error) {
 	c := CMUCorpus{Dict: map[string][]string{}}
-	cmuBytes, err := ioutil.ReadFile("haikudetector/cmudict.dict")
+	cmuBytes, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func (h Haiku) String() string {
 			if len(line[wordIndex].Tag) == 1 {
 				continue
 			}
-			if haiku.Len() > 0 {
+			if wordIndex > 0 {
 				haiku.WriteString(" ")
 			}
 			haiku.WriteString(line[wordIndex].Text)
@@ -125,21 +125,27 @@ func (s SyllableSentence) Subdivide(sylSizes ...int) Haiku {
 		return curSentence
 	}
 	for _, sylSize := range sylSizes {
+		curLineSize := 0
 		haikuLine := []prose.Token{}
-		for ; wordIndex <= len(s); wordIndex++ {
-			sylSize -= s[wordIndex].Syllables
-			//log.Printf("Word is %v, sylSize is %v, word syllables is %v", s[wordIndex].Word, sylSize, s[wordIndex].Syllables)
-			if sylSize < 0 {
-				// not haiku material
+		for ; wordIndex < len(s); wordIndex++ {
+			curWord := s[wordIndex]
+			curSize := curWord.Syllables
+			if curWord.Syllables == 0 {
+				log.Printf("Appending %+v", s[wordIndex].Word)
+				haikuLine = append(haikuLine, s[wordIndex].Word)
+				continue
+			}
+			if curLineSize+curSize > sylSize {
+				if curLineSize == sylSize {
+					break
+				}
 				return [][]prose.Token{}
 			}
+			curLineSize += curSize
 			haikuLine = append(haikuLine, s[wordIndex].Word)
-			if sylSize == 0 {
-				curSentence = append(curSentence, haikuLine)
-				wordIndex++
-				//log.Printf("curSentence is now %+v", curSentence)
-				break
-			}
+		}
+		if curLineSize == sylSize {
+			curSentence = append(curSentence, haikuLine)
 		}
 
 	}

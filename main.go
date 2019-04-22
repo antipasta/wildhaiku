@@ -46,7 +46,7 @@ func init() {
 	flag.StringVar(&flagConfigPath, "config", "config.json", "Path to config file")
 }
 func multiTest() {
-	cmu, err := haikudetector.LoadCMUCorpus()
+	cmu, err := haikudetector.LoadCMUCorpus("haikudetector/cmudict.dict")
 	if err != nil {
 		panic(err)
 	}
@@ -55,6 +55,7 @@ func multiTest() {
 	//deduped := "@PokerStars What does this mean - \"The Beatles\" prize?  Is this a birthday joke on me, as I did not receive the ticket in my account?  Thanks anyway, was still a good 64th Birthday! @PokerStars "
 	//bustedencoding := "In a relationship communication is key. Getting mad at your girl bc she's expressing what upsets her is lame. Instead of flipping the situation &amp; blaming it on her, ask her where u went wrong &amp; how u can fix it. Even if it's not that deep to u, it could be a serious matter to her"
 	bustedSkippedWords := "Please don't cut back ivy too hard in your garden! At this time of year, it's fantastic nesting habitat for birds. In autumn, its flowers will be a late-season food supply for pollinators like bees, butterflies, hoverflies. Then winter berries for birds 🐝"
+	//contractionFix :="Bill Barr is the Honey Badger. Honey Badger ain't scared of nothing. Broad shoulders, loose skin. Chuck Schumer? Honey Badger don't care. Gerry Nadler? Honey Badger don't care. Nancy Pelosi? Honey Badger don't care."
 
 	paragraph := cmu.ToSyllableParagraph(bustedSkippedWords)
 	foundHaikus := paragraph.Subdivide(5, 7, 5)
@@ -90,7 +91,7 @@ func TwitterLoop() {
 		TokenRequestURI:               "https://api.twitter.com/oauth/access_token",
 		Credentials:                   consumerKeys,
 	}
-	cmu, err := haikudetector.LoadCMUCorpus()
+	cmu, err := haikudetector.LoadCMUCorpus("haikudetector/cmudict.dict")
 	if err != nil {
 		panic(err)
 	}
