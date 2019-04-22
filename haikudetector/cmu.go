@@ -131,7 +131,6 @@ func (s SyllableSentence) Subdivide(sylSizes ...int) Haiku {
 			curWord := s[wordIndex]
 			curSize := curWord.Syllables
 			if curWord.Syllables == 0 {
-				log.Printf("Appending %+v", s[wordIndex].Word)
 				haikuLine = append(haikuLine, s[wordIndex].Word)
 				continue
 			}
