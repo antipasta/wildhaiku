@@ -26,6 +26,11 @@ func TestProblematicHaikus(t *testing.T) {
 			ExpectedOutput: "Is this a birthday\njoke on me, as I did not\nreceive the ticket\n",
 			Corpus:         cmu,
 		},
+		{
+			Input:          "Bill Barr is the Honey Badger. Honey Badger ain't scared of nothing. Broad shoulders, loose skin. Chuck Schumer? Honey Badger don't care. Gerry Nadler? Honey Badger don't care. Nancy Pelosi? Honey Badger don't care.",
+			ExpectedOutput: "Honey Badger ain't\nscared of nothing. Broad shoulders,\nloose skin. Chuck Schumer?\n",
+			Corpus:         cmu,
+		},
 	}
 	for _, h := range cases {
 		h.HaikuTest(t)

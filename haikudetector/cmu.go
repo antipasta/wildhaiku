@@ -9,7 +9,7 @@ import (
 	"strings"
 	"unicode"
 
-	prose "gopkg.in/jdkato/prose.v2"
+	prose "github.com/antipasta/prose"
 )
 
 type CMUCorpus struct {
