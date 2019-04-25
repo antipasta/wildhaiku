@@ -122,9 +122,9 @@ func (ts *TweetStreamer) StreamLoop() error {
 			panic(err)
 		}
 		t := anaconda.Tweet{}
-		//log.Printf("Got %+v", string(line))
 		err = json.Unmarshal(line, &t)
 		if err != nil {
+			log.Printf("Error parsing %+v", line)
 			continue
 		}
 		if t.FullText == "" || t.Lang != "en" {
