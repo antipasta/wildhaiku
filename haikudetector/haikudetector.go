@@ -85,7 +85,6 @@ func (c *CMUCorpus) SentenceSyllables(sentence string) (SyllableSentence, error)
 	var total int
 	for _, v := range sentenceDoc.Tokens() {
 		if c.IsSymbol(&v) {
-			// symbol
 			syllableSentence = append(syllableSentence, SyllableWord{Word: v, Syllables: 0})
 			continue
 		}
