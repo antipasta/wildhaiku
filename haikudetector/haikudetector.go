@@ -3,7 +3,6 @@ package haikudetector
 import (
 	"html"
 	"io/ioutil"
-	"log"
 	"strings"
 	"unicode"
 
@@ -65,15 +64,19 @@ func (c *CMUCorpus) SyllableCount(word string) (int, error) {
 
 }
 
+func (c *CMUCorpus) IsSymbol(word string) bool {
+	return len(word) == 1 && unicode.IsSymbol(rune(word[0]))
+}
+
 func (c *CMUCorpus) SentenceSyllables(sentence string) (SyllableSentence, error) {
 	syllableSentence := SyllableSentence{}
 	sentenceDoc, err := prose.NewDocument(sentence)
 	if err != nil {
-		log.Fatal(err)
+		return nil, errors.Wrapf(err, "Error parsing new document %+v", sentence)
 	}
 	var total int
 	for _, v := range sentenceDoc.Tokens() {
-		if len(v.Tag) == 1 {
+		if len(v.Tag) == 1 || c.IsSymbol(v.Text) {
 			// symbol
 			syllableSentence = append(syllableSentence, SyllableWord{Word: v, Syllables: 0})
 			continue
@@ -81,9 +84,7 @@ func (c *CMUCorpus) SentenceSyllables(sentence string) (SyllableSentence, error)
 		count, err := c.SyllableCount(v.Text)
 		if err != nil {
 			if total == 0 {
-				continue
-			}
-			if len(v.Text) == 1 {
+				// Skips unknown words at beginning of sentence. TODO should be beginning (and end) of paragraph
 				continue
 			}
 			return SyllableSentence{}, errors.Errorf("Could not find count for [%+v]", v)
