@@ -14,11 +14,19 @@ import (
 	"github.com/antipasta/wildhaiku/haikudetector"
 	"github.com/gomodule/oauth1/oauth"
 	"github.com/gookit/color"
+	"github.com/pkg/errors"
 )
 
 var flagConfigPath string
 
 type TweetStreamer struct {
+	Config         *StreamerConfig
+	ConsumerKeys   *oauth.Credentials
+	Token          *oauth.Credentials
+	Client         *oauth.Client
+	httpClient     *http.Client
+	ProcessChannel chan *anaconda.Tweet
+	corpus         *haikudetector.CMUCorpus
 }
 
 type StreamerConfig struct {
@@ -45,38 +53,24 @@ func LoadConfig(path string) (*StreamerConfig, error) {
 func init() {
 	flag.StringVar(&flagConfigPath, "config", "config.json", "Path to config file")
 }
-func multiTest() {
-	cmu, err := haikudetector.LoadCMUCorpus("haikudetector/cmudict.dict")
-	if err != nil {
-		panic(err)
-	}
-	//text := "here is some bad text. it is not a haiku. haiku starting here, such a bold test for this app. would love if it worked"
-	//text := "here's one haiku. it is an okay haiku. another is here, such a bold test for this app. would love if it worked"
-	//deduped := "@PokerStars What does this mean - \"The Beatles\" prize?  Is this a birthday joke on me, as I did not receive the ticket in my account?  Thanks anyway, was still a good 64th Birthday! @PokerStars "
-	//bustedencoding := "In a relationship communication is key. Getting mad at your girl bc she's expressing what upsets her is lame. Instead of flipping the situation &amp; blaming it on her, ask her where u went wrong &amp; how u can fix it. Even if it's not that deep to u, it could be a serious matter to her"
-	bustedSkippedWords := "Please don't cut back ivy too hard in your garden! At this time of year, it's fantastic nesting habitat for birds. In autumn, its flowers will be a late-season food supply for pollinators like bees, butterflies, hoverflies. Then winter berries for birds 🐝"
-	//contractionFix :="Bill Barr is the Honey Badger. Honey Badger ain't scared of nothing. Broad shoulders, loose skin. Chuck Schumer? Honey Badger don't care. Gerry Nadler? Honey Badger don't care. Nancy Pelosi? Honey Badger don't care."
 
-	paragraph := cmu.ToSyllableParagraph(bustedSkippedWords)
-	foundHaikus := paragraph.Subdivide(5, 7, 5)
-	if len(foundHaikus) > 0 {
-		for _, haiku := range foundHaikus {
-			log.Printf("Found haiku %+v", haiku)
-		}
-	}
-
-}
 func main() {
 	flag.Parse()
-	//multiTest()
-	TwitterLoop()
-}
-
-func TwitterLoop() {
 	cfg, err := LoadConfig(flagConfigPath)
 	if err != nil {
 		panic(err)
 	}
+	ts := NewTweetStreamer(cfg)
+	go ts.ProcessLoop()
+	err = ts.StreamLoop()
+	if err != nil {
+		panic(err)
+	}
+
+}
+
+func NewTweetStreamer(cfg *StreamerConfig) *TweetStreamer {
+	channel := make(chan *anaconda.Tweet, 10000)
 	consumerKeys := oauth.Credentials{
 		Token:  cfg.ConsumerKey,
 		Secret: cfg.ConsumerSecret,
@@ -95,14 +89,27 @@ func TwitterLoop() {
 	if err != nil {
 		panic(err)
 	}
+	ts := TweetStreamer{Config: cfg, ConsumerKeys: &consumerKeys, Token: &token, Client: &client, httpClient: &http.Client{}, ProcessChannel: channel, corpus: cmu}
+	return &ts
+}
 
-	httpClient := http.Client{}
-	resp, err := client.Post(&httpClient, &token, "https://stream.twitter.com/1.1/statuses/filter.json", url.Values{"lang": []string{"en"}, "track": cfg.TrackingKeywords, "tweet_mode": []string{"extended"}})
+func (ts *TweetStreamer) Connect() (*http.Response, error) {
+	resp, err := ts.Client.Post(ts.httpClient, ts.Token, "https://stream.twitter.com/1.1/statuses/filter.json", url.Values{"lang": []string{"en"}, "track": ts.Config.TrackingKeywords, "tweet_mode": []string{"extended"}})
 	if err != nil {
-		panic(err)
+		return nil, errors.Wrapf(err, "Caught error when connecting to twitter stream")
 	}
-	if resp.StatusCode != 200 {
-		panic(resp.Status)
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.Errorf("Received non-OK error code [%v] [%v] when connecting to twitter stream", resp.StatusCode, resp.Status)
+
+	}
+	return resp, nil
+}
+
+func (ts *TweetStreamer) StreamLoop() error {
+	resp, err := ts.Connect()
+	if err != nil {
+		return err
 	}
 	defer resp.Body.Close()
 	buf := bufio.NewReader(resp.Body)
@@ -126,15 +133,25 @@ func TwitterLoop() {
 		if t.RetweetedStatus != nil {
 			t = *t.RetweetedStatus
 		}
-		paragraph := cmu.ToSyllableParagraph(t.FullText)
-		foundHaikus := paragraph.Subdivide(5, 7, 5)
-		if len(foundHaikus) > 0 {
-			log.Printf("https://twitter.com/%v/status/%v %v", t.User.ScreenName, t.IdStr, t.FullText)
-			for i, foundHaiku := range foundHaikus {
-				color.Cyan.Printf("%d. %s\n", i+1, foundHaiku)
+		ts.ProcessChannel <- &t
+	}
+}
 
-			}
+func (ts *TweetStreamer) Process(t *anaconda.Tweet) []haikudetector.Haiku {
+	paragraph := ts.corpus.ToSyllableParagraph(t.FullText)
+	foundHaikus := paragraph.Subdivide(5, 7, 5)
+	if len(foundHaikus) > 0 {
+		log.Printf("https://twitter.com/%v/status/%v %v", t.User.ScreenName, t.IdStr, t.FullText)
+		for i, foundHaiku := range foundHaikus {
+			color.Cyan.Printf("%d. %s\n", i+1, foundHaiku)
+
 		}
 	}
-
+	return foundHaikus
+}
+func (ts *TweetStreamer) ProcessLoop() error {
+	for tweet := range ts.ProcessChannel {
+		ts.Process(tweet)
+	}
+	return nil
 }

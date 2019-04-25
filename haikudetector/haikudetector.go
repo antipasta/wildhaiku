@@ -9,7 +9,7 @@ import (
 	"strings"
 	"unicode"
 
-	prose "github.com/antipasta/prose"
+	prose "gopkg.in/antipasta/prose.v2"
 )
 
 type CMUCorpus struct {
@@ -168,13 +168,18 @@ func (c *CMUCorpus) ToSyllableParagraph(sentence string) SyllableParagraph {
 		log.Fatal(err)
 	}
 	for _, sentence := range sentenceDoc.Sentences() {
-		paragraph = append(paragraph, c.SentenceSyllables(sentence.Text))
+		sentenceObj, err := c.SentenceSyllables(sentence.Text)
+		if err != nil {
+			//return SyllableParagraph{}
+			continue
+		}
+		paragraph = append(paragraph, sentenceObj)
 	}
 	return paragraph
 
 }
 
-func (c *CMUCorpus) SentenceSyllables(sentence string) SyllableSentence {
+func (c *CMUCorpus) SentenceSyllables(sentence string) (SyllableSentence, error) {
 	syllableSentence := SyllableSentence{}
 	sentenceDoc, err := prose.NewDocument(sentence)
 	if err != nil {
@@ -189,14 +194,19 @@ func (c *CMUCorpus) SentenceSyllables(sentence string) SyllableSentence {
 		}
 		count, err := c.SyllableCount(v.Text)
 		if err != nil {
+			if total == 0 {
+				continue
+			}
+			if len(v.Text) == 1 {
+				continue
+			}
 			//TODO do we just give up here? for now continuing on but thats incorrect
-			//log.Printf("Got error on syllable count for word %+v [%+v] %+v", v.Tag, v.Text, err)
-			//return SyllableSentence{}
-			break
+			return SyllableSentence{}, fmt.Errorf("Could not find count for [%+v]", v)
+			//break
 		}
 		total += count
 		syllableSentence = append(syllableSentence, SyllableWord{Word: v, Syllables: count})
 	}
 	//log.Printf("Total for [%+v]: %v", sentence, total)
-	return syllableSentence
+	return syllableSentence, nil
 }
