@@ -42,9 +42,8 @@ func (eh *ExpectedHaiku) HaikuTest(t *testing.T) []Haiku {
 	paragraph := eh.Corpus.ToSyllableParagraph(eh.Input)
 	foundHaikus := paragraph.Subdivide(5, 7, 5)
 	if len(foundHaikus) == 0 {
-		t.Errorf("Found no haikus")
-	}
-	if foundHaikus[0].String() != eh.ExpectedOutput {
+		t.Errorf("Found no haikus for text %v", eh.Input)
+	} else if foundHaikus[0].String() != eh.ExpectedOutput {
 		t.Errorf("Output [%v] does not match expected [%+v]", foundHaikus[0].String(), eh.ExpectedOutput)
 	}
 	return foundHaikus

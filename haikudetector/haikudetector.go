@@ -64,8 +64,16 @@ func (c *CMUCorpus) SyllableCount(word string) (int, error) {
 
 }
 
-func (c *CMUCorpus) IsSymbol(word string) bool {
-	return len(word) == 1 && unicode.IsSymbol(rune(word[0]))
+func (c *CMUCorpus) IsSymbol(token *prose.Token) bool {
+	//log.Printf("text is %+v", token.Text)
+	if len(token.Text) != 1 {
+		return false
+	}
+	if token.Text == "\"" {
+		// parses as Tag PDT...
+		return true
+	}
+	return len(token.Tag) == 1 || unicode.IsSymbol(rune(token.Text[0]))
 }
 
 func (c *CMUCorpus) SentenceSyllables(sentence string) (SyllableSentence, error) {
@@ -76,7 +84,7 @@ func (c *CMUCorpus) SentenceSyllables(sentence string) (SyllableSentence, error)
 	}
 	var total int
 	for _, v := range sentenceDoc.Tokens() {
-		if c.IsSymbol(v.Text) {
+		if c.IsSymbol(&v) {
 			// symbol
 			syllableSentence = append(syllableSentence, SyllableWord{Word: v, Syllables: 0})
 			continue
