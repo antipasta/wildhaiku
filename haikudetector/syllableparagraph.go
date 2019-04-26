@@ -54,9 +54,9 @@ func (c *CMUCorpus) ToSyllableParagraph(sentence string) SyllableParagraph {
 		}
 		sentenceObj, err := c.ToSyllableSentence(sentence.Text, tokenFilters...)
 		if err != nil {
+			// Got an error mid sentence after filtering, bail
 			//log.Printf("Got error when parsing sentence syllables %v", err)
-			//return SyllableParagraph{}
-			continue
+			return SyllableParagraph{}
 		}
 		paragraph = append(paragraph, sentenceObj)
 	}
