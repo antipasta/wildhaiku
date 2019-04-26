@@ -22,6 +22,11 @@ func TestProblematicHaikus(t *testing.T) {
 			Corpus:         cmu,
 		},
 		{
+			Input:          "here is some bad text. it is not a haiku. haiku starting here, such a bold test for this app. would love if it worked #trailingjunk",
+			ExpectedOutput: "haiku starting here,\nsuch a bold test for this app.\nwould love if it worked\n",
+			Corpus:         cmu,
+		},
+		{
 			Input:          "@PokerStars What does this mean - \"The Beatles\" prize?  Is this a birthday joke on me, as I did not receive the ticket in my account?  Thanks anyway, was still a good 64th Birthday! @PokerStars ",
 			ExpectedOutput: "Is this a birthday\njoke on me, as I did not\nreceive the ticket\n",
 			Corpus:         cmu,

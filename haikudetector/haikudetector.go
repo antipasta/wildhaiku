@@ -79,10 +79,21 @@ type TokenFilterFunc func([]prose.Token) []prose.Token
 
 func (c *CMUCorpus) TrimStartingUnknowns(tokens []prose.Token) []prose.Token {
 	for len(tokens) > 0 {
-		if c.HasSyllableCount(tokens[0].Text) {
+		if c.HasSyllableCount(tokens[0].Text) || c.IsSymbol(&tokens[0]) {
 			return tokens
 		}
 		tokens = tokens[1:]
+	}
+	return tokens
+}
+
+func (c *CMUCorpus) TrimTrailingUnknowns(tokens []prose.Token) []prose.Token {
+	for len(tokens) > 0 {
+		lastIndex := len(tokens) - 1
+		if c.HasSyllableCount(tokens[lastIndex].Text) || c.IsSymbol(&tokens[lastIndex]) {
+			return tokens
+		}
+		tokens = tokens[0:lastIndex]
 	}
 	return tokens
 }
@@ -101,21 +112,15 @@ func (c *CMUCorpus) ToSyllableSentence(sentence string) (SyllableSentence, error
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error parsing new document %+v", sentence)
 	}
-	var total int
-	for _, v := range TokenizeFunc(sentenceDoc.Tokens).Filter(c.TrimStartingUnknowns) {
+	for _, v := range TokenizeFunc(sentenceDoc.Tokens).Filter(c.TrimStartingUnknowns, c.TrimTrailingUnknowns) {
 		if c.IsSymbol(&v) {
 			syllableSentence = append(syllableSentence, SyllableWord{Word: v, Syllables: 0})
 			continue
 		}
 		count, err := c.SyllableCount(v.Text)
 		if err != nil {
-			if total == 0 {
-				// Skips unknown words at beginning of sentence. TODO should be beginning (and end) of paragraph
-				continue
-			}
 			return SyllableSentence{}, errors.Errorf("Could not find count for [%+v]", v)
 		}
-		total += count
 		syllableSentence = append(syllableSentence, SyllableWord{Word: v, Syllables: count})
 	}
 	return syllableSentence, nil
