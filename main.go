@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/ChimeraCoder/anaconda"
 	"github.com/antipasta/wildhaiku/haikudetector"
 	"github.com/gomodule/oauth1/oauth"
 	"github.com/gookit/color"
@@ -25,7 +24,7 @@ type TweetStreamer struct {
 	Token          *oauth.Credentials
 	Client         *oauth.Client
 	httpClient     *http.Client
-	ProcessChannel chan *anaconda.Tweet
+	ProcessChannel chan *Tweet
 	corpus         *haikudetector.CMUCorpus
 }
 
@@ -70,7 +69,7 @@ func main() {
 }
 
 func NewTweetStreamer(cfg *StreamerConfig) *TweetStreamer {
-	channel := make(chan *anaconda.Tweet, 10000)
+	channel := make(chan *Tweet, 10000)
 	consumerKeys := oauth.Credentials{
 		Token:  cfg.ConsumerKey,
 		Secret: cfg.ConsumerSecret,
@@ -121,27 +120,47 @@ func (ts *TweetStreamer) StreamLoop() error {
 		if err != nil {
 			panic(err)
 		}
-		t := anaconda.Tweet{}
+		t := Tweet{}
 		err = json.Unmarshal(line, &t)
 		if err != nil {
 			log.Printf("Error parsing %+v", line)
 			continue
 		}
-		if t.FullText == "" || t.Lang != "en" {
-			continue
-		}
 		if t.RetweetedStatus != nil {
 			t = *t.RetweetedStatus
+		}
+		if t.FullText() == "" || t.Lang != "en" {
+			continue
 		}
 		ts.ProcessChannel <- &t
 	}
 }
 
-func (ts *TweetStreamer) Process(t *anaconda.Tweet) []haikudetector.Haiku {
-	paragraph := ts.corpus.ToSyllableParagraph(t.FullText)
+type Tweet struct {
+	IDStr string `json:"id_str"`
+	Lang  string `json:"lang"`
+	User  struct {
+		ScreenName string `json:"screen_name"`
+	} `json:"user"`
+	Text          string `json:"text"`
+	ExtendedTweet struct {
+		FullText string `json:"full_text"`
+	} `json:"extended_tweet"`
+	RetweetedStatus *Tweet `json:"retweeted_status"`
+}
+
+func (t *Tweet) FullText() string {
+	if len(t.ExtendedTweet.FullText) > 0 {
+		return t.ExtendedTweet.FullText
+	}
+	return t.Text
+}
+
+func (ts *TweetStreamer) Process(t *Tweet) []haikudetector.Haiku {
+	paragraph := ts.corpus.ToSyllableParagraph(t.FullText())
 	foundHaikus := paragraph.Subdivide(5, 7, 5)
 	if len(foundHaikus) > 0 {
-		log.Printf("https://twitter.com/%v/status/%v %v", t.User.ScreenName, t.IdStr, t.FullText)
+		log.Printf("https://twitter.com/%v/status/%v %v", t.User.ScreenName, t.IDStr, t.FullText())
 		for i, foundHaiku := range foundHaikus {
 			color.Cyan.Printf("%d. %s\n", i+1, foundHaiku)
 

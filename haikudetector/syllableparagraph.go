@@ -56,6 +56,11 @@ func (c *CMUCorpus) ToSyllableParagraph(sentence string) SyllableParagraph {
 		if err != nil {
 			// Got an error mid sentence after filtering, bail
 			//log.Printf("Got error when parsing sentence syllables %v", err)
+			if paragraph.ToCombinedSentence().TotalSyllables() >= 17 {
+				// Without this sentence we have more than enough to attempt to find a haiku, return what we found so far
+				return paragraph
+			}
+			// we didnt get enough for a potential hiaku, bail
 			return SyllableParagraph{}
 		}
 		paragraph = append(paragraph, sentenceObj)
