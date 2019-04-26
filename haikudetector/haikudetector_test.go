@@ -17,6 +17,11 @@ func TestProblematicHaikus(t *testing.T) {
 	}
 	cases := []ExpectedHaiku{
 		{
+			Input:          "@startingjunk #hi testing a trim of both starting and trailing junk in the same sentence #devlyfe",
+			ExpectedOutput: "testing a trim of\nboth starting and trailing junk\nin the same sentence\n",
+			Corpus:         cmu,
+		},
+		{
 			Input:          "here is some bad text. it is not a haiku. haiku starting here, such a bold test for this app. would love if it worked",
 			ExpectedOutput: "haiku starting here,\nsuch a bold test for this app.\nwould love if it worked\n",
 			Corpus:         cmu,

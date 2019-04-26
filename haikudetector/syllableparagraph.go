@@ -43,8 +43,16 @@ func (c *CMUCorpus) ToSyllableParagraph(sentence string) SyllableParagraph {
 	if err != nil {
 		log.Fatal(err)
 	}
-	for _, sentence := range sentenceDoc.Sentences() {
-		sentenceObj, err := c.ToSyllableSentence(sentence.Text)
+	tokenFilters := []TokenFilterFunc{}
+	sentences := sentenceDoc.Sentences()
+	for i, sentence := range sentences {
+		if i == 0 {
+			tokenFilters = append(tokenFilters, c.TrimStartingUnknowns)
+		}
+		if i == len(sentences)-1 {
+			tokenFilters = append(tokenFilters, c.TrimTrailingUnknowns)
+		}
+		sentenceObj, err := c.ToSyllableSentence(sentence.Text, tokenFilters...)
 		if err != nil {
 			//log.Printf("Got error when parsing sentence syllables %v", err)
 			//return SyllableParagraph{}
