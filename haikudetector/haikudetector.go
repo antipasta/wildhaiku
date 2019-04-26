@@ -12,10 +12,6 @@ import (
 
 type PreProcessFunc func(string) string
 
-func TrimUnknowns(input string) string {
-	return input
-}
-
 type CMUCorpus struct {
 	PreProcess []PreProcessFunc
 	Dict       map[string][]string
@@ -27,7 +23,7 @@ type SyllableWord struct {
 
 func LoadCMUCorpus(path string) (*CMUCorpus, error) {
 	c := CMUCorpus{Dict: map[string][]string{},
-		PreProcess: []PreProcessFunc{html.UnescapeString, TrimUnknowns},
+		PreProcess: []PreProcessFunc{html.UnescapeString},
 	}
 	cmuBytes, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -64,26 +60,49 @@ func (c *CMUCorpus) SyllableCount(word string) (int, error) {
 
 }
 
+func (c *CMUCorpus) HasSyllableCount(word string) bool {
+	lowerWord := strings.ToLower(word)
+	phenomes, exists := c.Dict[lowerWord]
+	return exists && len(phenomes) > 0
+}
+
 func (c *CMUCorpus) IsSymbol(token *prose.Token) bool {
-	//log.Printf("text is %+v", token.Text)
 	if len(token.Text) != 1 {
 		return false
 	}
-	if token.Text == "\"" {
-		// parses as Tag PDT...
-		return true
-	}
-	return len(token.Tag) == 1 || unicode.IsSymbol(rune(token.Text[0]))
+	char := rune(token.Text[0])
+	return len(token.Tag) == 1 || unicode.IsSymbol(char) || unicode.IsPunct(char)
 }
 
-func (c *CMUCorpus) SentenceSyllables(sentence string) (SyllableSentence, error) {
+type TokenizeFunc func() []prose.Token
+type TokenFilterFunc func([]prose.Token) []prose.Token
+
+func (c *CMUCorpus) TrimStartingUnknowns(tokens []prose.Token) []prose.Token {
+	for len(tokens) > 0 {
+		if c.HasSyllableCount(tokens[0].Text) {
+			return tokens
+		}
+		tokens = tokens[1:]
+	}
+	return tokens
+}
+
+func (tf TokenizeFunc) Filter(filterFuncs ...TokenFilterFunc) []prose.Token {
+	tokens := tf()
+	for _, filterFunc := range filterFuncs {
+		tokens = filterFunc(tokens)
+	}
+	return tokens
+}
+
+func (c *CMUCorpus) ToSyllableSentence(sentence string) (SyllableSentence, error) {
 	syllableSentence := SyllableSentence{}
 	sentenceDoc, err := prose.NewDocument(sentence)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error parsing new document %+v", sentence)
 	}
 	var total int
-	for _, v := range sentenceDoc.Tokens() {
+	for _, v := range TokenizeFunc(sentenceDoc.Tokens).Filter(c.TrimStartingUnknowns) {
 		if c.IsSymbol(&v) {
 			syllableSentence = append(syllableSentence, SyllableWord{Word: v, Syllables: 0})
 			continue

@@ -44,8 +44,9 @@ func (c *CMUCorpus) ToSyllableParagraph(sentence string) SyllableParagraph {
 		log.Fatal(err)
 	}
 	for _, sentence := range sentenceDoc.Sentences() {
-		sentenceObj, err := c.SentenceSyllables(sentence.Text)
+		sentenceObj, err := c.ToSyllableSentence(sentence.Text)
 		if err != nil {
+			//log.Printf("Got error when parsing sentence syllables %v", err)
 			//return SyllableParagraph{}
 			continue
 		}
