@@ -4,11 +4,14 @@ import (
 	"bufio"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
+	"os"
+	"time"
 
 	"github.com/antipasta/wildhaiku/syllable"
 	"github.com/gomodule/oauth1/oauth"
@@ -19,7 +22,7 @@ import (
 var flagConfigPath string
 
 type HaikuOutput struct {
-	Haikus []string
+	Haikus []syllable.Haiku
 	Tweet  *Tweet
 }
 
@@ -32,6 +35,7 @@ type TweetStreamer struct {
 	ProcessChannel chan *Tweet
 	corpus         *syllable.CMUCorpus
 	OutputChannel  chan *HaikuOutput
+	OutFile        *os.File
 }
 
 type StreamerConfig struct {
@@ -40,6 +44,8 @@ type StreamerConfig struct {
 	AccessToken      string
 	AccessSecret     string
 	TrackingKeywords []string
+	CorpusPath       string
+	OutputPath       string
 }
 
 func LoadConfig(path string) (*StreamerConfig, error) {
@@ -92,7 +98,7 @@ func NewTweetStreamer(cfg *StreamerConfig) *TweetStreamer {
 		TokenRequestURI:               "https://api.twitter.com/oauth/access_token",
 		Credentials:                   consumerKeys,
 	}
-	cmu, err := syllable.LoadCMUCorpus("syllable/cmudict.dict")
+	cmu, err := syllable.LoadCMUCorpus(cfg.CorpusPath)
 	if err != nil {
 		panic(err)
 	}
@@ -150,15 +156,17 @@ type Tweet struct {
 	User  struct {
 		ScreenName string `json:"screen_name"`
 	} `json:"user"`
-	Text          string `json:"text,omitempty"`
-	ExtendedTweet struct {
-		FullText string `json:"full_text"`
-	} `json:"extended_tweet,omitempty"`
-	RetweetedStatus *Tweet `json:"retweeted_status,omitempty"`
+	Text            string         `json:"text,omitempty"`
+	ExtendedTweet   *ExtendedTweet `json:"extended_tweet,omitempty"`
+	RetweetedStatus *Tweet         `json:"retweeted_status,omitempty"`
+}
+
+type ExtendedTweet struct {
+	FullText string `json:"full_text,omitempty"`
 }
 
 func (t *Tweet) FullText() string {
-	if len(t.ExtendedTweet.FullText) > 0 {
+	if t.ExtendedTweet != nil && len(t.ExtendedTweet.FullText) > 0 {
 		return t.ExtendedTweet.FullText
 	}
 	return t.Text
@@ -167,11 +175,11 @@ func (t *Tweet) FullText() string {
 func (ts *TweetStreamer) Process(t *Tweet) *HaikuOutput {
 	paragraph := ts.corpus.ToSyllableParagraph(t.FullText())
 	foundHaikus := paragraph.Subdivide(5, 7, 5)
-	haikuStrings := []string{}
+	haikuStrings := [][]string{}
 	for _, haiku := range foundHaikus {
-		haikuStrings = append(haikuStrings, haiku.String())
+		haikuStrings = append(haikuStrings, haiku.ToStringArray())
 	}
-	return &HaikuOutput{Tweet: t, Haikus: haikuStrings}
+	return &HaikuOutput{Tweet: t, Haikus: foundHaikus}
 }
 
 func (ts *TweetStreamer) ProcessLoop() error {
@@ -185,24 +193,37 @@ func (ts *TweetStreamer) ProcessLoop() error {
 	return nil
 }
 
-func (ts *TweetStreamer) Output(out *HaikuOutput) {
+func (ts *TweetStreamer) Output(out *HaikuOutput) error {
 	if len(out.Haikus) == 0 {
-		return
+		return nil
 	}
 	t := out.Tweet
 	log.Printf("https://twitter.com/%v/status/%v %v", t.User.ScreenName, t.IDStr, t.FullText())
 	for i, foundHaiku := range out.Haikus {
-		color.Cyan.Printf("%d. %s\n", i+1, foundHaiku)
+		color.Cyan.Printf("%d. %s\n", i+1, foundHaiku.String())
 
 	}
 	bytes, err := json.Marshal(out)
 	if err != nil {
 		panic(err)
 	}
-	log.Printf(string(bytes))
+	//log.Printf(string(bytes))
+	_, err = ts.OutFile.WriteString(fmt.Sprintf("%s\n", string(bytes)))
+	if err != nil {
+		return errors.Wrapf(err, "Error writing to file %s", ts.OutFile.Name())
+	}
+	return nil
 }
 
 func (ts *TweetStreamer) OutputLoop() error {
+	now := time.Now().UTC()
+	fileName := fmt.Sprintf("haiku_%s.json", now.Format(time.RFC3339))
+	filePath := fmt.Sprintf("%s/%s", ts.Config.OutputPath, fileName)
+	var err error
+	ts.OutFile, err = os.Create(filePath)
+	if err != nil {
+		return errors.Wrapf(err, "Error creating file %s", filePath)
+	}
 	for tweet := range ts.OutputChannel {
 		ts.Output(tweet)
 	}
