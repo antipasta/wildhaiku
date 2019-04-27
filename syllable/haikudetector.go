@@ -16,7 +16,7 @@ type CMUCorpus struct {
 	PreProcess []PreProcessFunc
 	Dict       map[string][]string
 }
-type SyllableWord struct {
+type Word struct {
 	Word      prose.Token
 	Syllables int
 }
@@ -66,7 +66,7 @@ func (c *CMUCorpus) HasSyllableCount(word string) bool {
 	return exists && len(phenomes) > 0
 }
 
-func (c *CMUCorpus) IsSymbol(token *prose.Token) bool {
+func IsSymbolOrPunct(token *prose.Token) bool {
 	if len(token.Text) != 1 {
 		return false
 	}
@@ -79,7 +79,7 @@ type TokenFilterFunc func([]prose.Token) []prose.Token
 
 func (c *CMUCorpus) TrimStartingUnknowns(tokens []prose.Token) []prose.Token {
 	for len(tokens) > 0 {
-		if c.HasSyllableCount(tokens[0].Text) || c.IsSymbol(&tokens[0]) {
+		if c.HasSyllableCount(tokens[0].Text) || IsSymbolOrPunct(&tokens[0]) {
 			return tokens
 		}
 		tokens = tokens[1:]
@@ -90,7 +90,7 @@ func (c *CMUCorpus) TrimStartingUnknowns(tokens []prose.Token) []prose.Token {
 func (c *CMUCorpus) TrimTrailingUnknowns(tokens []prose.Token) []prose.Token {
 	for len(tokens) > 0 {
 		lastIndex := len(tokens) - 1
-		if c.HasSyllableCount(tokens[lastIndex].Text) || c.IsSymbol(&tokens[lastIndex]) {
+		if c.HasSyllableCount(tokens[lastIndex].Text) || IsSymbolOrPunct(&tokens[lastIndex]) {
 			return tokens
 		}
 		tokens = tokens[0:lastIndex]
@@ -108,20 +108,21 @@ func (tf TokenizeFunc) Filter(filterFuncs ...TokenFilterFunc) []prose.Token {
 
 func (c *CMUCorpus) ToSyllableSentence(sentence string, filters ...TokenFilterFunc) (Sentence, error) {
 	syllableSentence := Sentence{}
-	sentenceDoc, err := prose.NewDocument(sentence)
+	//sentenceDoc, err := prose.NewDocument(sentence)
+	sentenceDoc, err := prose.NewDocument(sentence, prose.WithExtraction(false), prose.WithTagging(false), prose.WithTokenization(true))
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error parsing new document %+v", sentence)
 	}
 	for _, v := range TokenizeFunc(sentenceDoc.Tokens).Filter(filters...) {
-		if c.IsSymbol(&v) {
-			syllableSentence = append(syllableSentence, SyllableWord{Word: v, Syllables: 0})
+		if IsSymbolOrPunct(&v) {
+			syllableSentence = append(syllableSentence, Word{Word: v, Syllables: 0})
 			continue
 		}
 		count, err := c.SyllableCount(v.Text)
 		if err != nil {
 			return Sentence{}, errors.Errorf("Could not find count for [%+v]", v)
 		}
-		syllableSentence = append(syllableSentence, SyllableWord{Word: v, Syllables: count})
+		syllableSentence = append(syllableSentence, Word{Word: v, Syllables: count})
 	}
 	return syllableSentence, nil
 }

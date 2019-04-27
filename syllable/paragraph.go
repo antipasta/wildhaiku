@@ -39,7 +39,7 @@ func (c *CMUCorpus) ToSyllableParagraph(sentence string) Paragraph {
 		sentence = pFunc(sentence)
 	}
 	paragraph := Paragraph{}
-	sentenceDoc, err := prose.NewDocument(sentence)
+	sentenceDoc, err := prose.NewDocument(sentence, prose.WithExtraction(false), prose.WithTagging(false), prose.WithTokenization(false))
 	if err != nil {
 		log.Fatal(err)
 	}

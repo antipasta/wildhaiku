@@ -6,7 +6,7 @@ import (
 	prose "gopkg.in/antipasta/prose.v2"
 )
 
-type Sentence []SyllableWord
+type Sentence []Word
 
 func (s Sentence) TotalSyllables() int {
 	total := 0

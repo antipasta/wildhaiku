@@ -20,14 +20,14 @@ func (h Haiku) ToStringArray() [3]string {
 	for lineIndex, line := range h {
 		haikuLine := bytes.Buffer{}
 		for wordIndex := range line {
-			if len(line[wordIndex].Tag) == 1 {
+			if IsSymbolOrPunct(&line[wordIndex]) {
 				continue
 			}
 			if wordIndex > 0 {
 				haikuLine.WriteString(" ")
 			}
 			haikuLine.WriteString(line[wordIndex].Text)
-			if wordIndex+1 < len(line) && len(line[wordIndex+1].Tag) == 1 {
+			if wordIndex+1 < len(line) && IsSymbolOrPunct(&line[wordIndex+1]) {
 				haikuLine.WriteString(line[wordIndex+1].Text)
 			}
 		}
