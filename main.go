@@ -10,13 +10,18 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/antipasta/wildhaiku/haikudetector"
+	"github.com/antipasta/wildhaiku/syllable"
 	"github.com/gomodule/oauth1/oauth"
 	"github.com/gookit/color"
 	"github.com/pkg/errors"
 )
 
 var flagConfigPath string
+
+type HaikuOutput struct {
+	Haikus []string
+	Tweet  *Tweet
+}
 
 type TweetStreamer struct {
 	Config         *StreamerConfig
@@ -25,7 +30,8 @@ type TweetStreamer struct {
 	Client         *oauth.Client
 	httpClient     *http.Client
 	ProcessChannel chan *Tweet
-	corpus         *haikudetector.CMUCorpus
+	corpus         *syllable.CMUCorpus
+	OutputChannel  chan *HaikuOutput
 }
 
 type StreamerConfig struct {
@@ -61,6 +67,7 @@ func main() {
 	}
 	ts := NewTweetStreamer(cfg)
 	go ts.ProcessLoop()
+	go ts.OutputLoop()
 	err = ts.StreamLoop()
 	if err != nil {
 		panic(err)
@@ -69,7 +76,8 @@ func main() {
 }
 
 func NewTweetStreamer(cfg *StreamerConfig) *TweetStreamer {
-	channel := make(chan *Tweet, 10000)
+	processChannel := make(chan *Tweet, 10000)
+	outChannel := make(chan *HaikuOutput, 10000)
 	consumerKeys := oauth.Credentials{
 		Token:  cfg.ConsumerKey,
 		Secret: cfg.ConsumerSecret,
@@ -84,11 +92,11 @@ func NewTweetStreamer(cfg *StreamerConfig) *TweetStreamer {
 		TokenRequestURI:               "https://api.twitter.com/oauth/access_token",
 		Credentials:                   consumerKeys,
 	}
-	cmu, err := haikudetector.LoadCMUCorpus("haikudetector/cmudict.dict")
+	cmu, err := syllable.LoadCMUCorpus("syllable/cmudict.dict")
 	if err != nil {
 		panic(err)
 	}
-	ts := TweetStreamer{Config: cfg, ConsumerKeys: &consumerKeys, Token: &token, Client: &client, httpClient: &http.Client{}, ProcessChannel: channel, corpus: cmu}
+	ts := TweetStreamer{Config: cfg, ConsumerKeys: &consumerKeys, Token: &token, Client: &client, httpClient: &http.Client{}, ProcessChannel: processChannel, OutputChannel: outChannel, corpus: cmu}
 	return &ts
 }
 
@@ -142,11 +150,11 @@ type Tweet struct {
 	User  struct {
 		ScreenName string `json:"screen_name"`
 	} `json:"user"`
-	Text          string `json:"text"`
+	Text          string `json:"text,omitempty"`
 	ExtendedTweet struct {
 		FullText string `json:"full_text"`
-	} `json:"extended_tweet"`
-	RetweetedStatus *Tweet `json:"retweeted_status"`
+	} `json:"extended_tweet,omitempty"`
+	RetweetedStatus *Tweet `json:"retweeted_status,omitempty"`
 }
 
 func (t *Tweet) FullText() string {
@@ -156,21 +164,47 @@ func (t *Tweet) FullText() string {
 	return t.Text
 }
 
-func (ts *TweetStreamer) Process(t *Tweet) []haikudetector.Haiku {
+func (ts *TweetStreamer) Process(t *Tweet) *HaikuOutput {
 	paragraph := ts.corpus.ToSyllableParagraph(t.FullText())
 	foundHaikus := paragraph.Subdivide(5, 7, 5)
-	if len(foundHaikus) > 0 {
-		log.Printf("https://twitter.com/%v/status/%v %v", t.User.ScreenName, t.IDStr, t.FullText())
-		for i, foundHaiku := range foundHaikus {
-			color.Cyan.Printf("%d. %s\n", i+1, foundHaiku)
-
-		}
+	haikuStrings := []string{}
+	for _, haiku := range foundHaikus {
+		haikuStrings = append(haikuStrings, haiku.String())
 	}
-	return foundHaikus
+	return &HaikuOutput{Tweet: t, Haikus: haikuStrings}
 }
+
 func (ts *TweetStreamer) ProcessLoop() error {
 	for tweet := range ts.ProcessChannel {
-		ts.Process(tweet)
+		output := ts.Process(tweet)
+		if len(output.Haikus) > 0 {
+			ts.OutputChannel <- output
+		}
+
+	}
+	return nil
+}
+
+func (ts *TweetStreamer) Output(out *HaikuOutput) {
+	if len(out.Haikus) == 0 {
+		return
+	}
+	t := out.Tweet
+	log.Printf("https://twitter.com/%v/status/%v %v", t.User.ScreenName, t.IDStr, t.FullText())
+	for i, foundHaiku := range out.Haikus {
+		color.Cyan.Printf("%d. %s\n", i+1, foundHaiku)
+
+	}
+	bytes, err := json.Marshal(out)
+	if err != nil {
+		panic(err)
+	}
+	log.Printf(string(bytes))
+}
+
+func (ts *TweetStreamer) OutputLoop() error {
+	for tweet := range ts.OutputChannel {
+		ts.Output(tweet)
 	}
 	return nil
 }

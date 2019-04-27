@@ -1,4 +1,4 @@
-package haikudetector
+package syllable
 
 import (
 	"fmt"
@@ -7,9 +7,9 @@ import (
 	prose "gopkg.in/antipasta/prose.v2"
 )
 
-type SyllableParagraph []SyllableSentence
+type Paragraph []Sentence
 
-func (p SyllableParagraph) Subdivide(sylSizes ...int) []Haiku {
+func (p Paragraph) Subdivide(sylSizes ...int) []Haiku {
 
 	haikuMap := map[string]Haiku{}
 	haikus := []Haiku{}
@@ -25,8 +25,8 @@ func (p SyllableParagraph) Subdivide(sylSizes ...int) []Haiku {
 	}
 	return haikus
 }
-func (p SyllableParagraph) ToCombinedSentence() SyllableSentence {
-	combinedSentence := SyllableSentence{}
+func (p Paragraph) ToCombinedSentence() Sentence {
+	combinedSentence := Sentence{}
 	for _, sentence := range p {
 		combinedSentence = append(combinedSentence, sentence...)
 	}
@@ -34,11 +34,11 @@ func (p SyllableParagraph) ToCombinedSentence() SyllableSentence {
 
 }
 
-func (c *CMUCorpus) ToSyllableParagraph(sentence string) SyllableParagraph {
+func (c *CMUCorpus) ToSyllableParagraph(sentence string) Paragraph {
 	for _, pFunc := range c.PreProcess {
 		sentence = pFunc(sentence)
 	}
-	paragraph := SyllableParagraph{}
+	paragraph := Paragraph{}
 	sentenceDoc, err := prose.NewDocument(sentence)
 	if err != nil {
 		log.Fatal(err)
@@ -61,7 +61,7 @@ func (c *CMUCorpus) ToSyllableParagraph(sentence string) SyllableParagraph {
 				return paragraph
 			}
 			// we didnt get enough for a potential hiaku, bail
-			return SyllableParagraph{}
+			return Paragraph{}
 		}
 		paragraph = append(paragraph, sentenceObj)
 	}

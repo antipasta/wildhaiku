@@ -1,4 +1,4 @@
-package haikudetector
+package syllable
 
 import (
 	"bytes"

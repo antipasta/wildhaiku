@@ -1,4 +1,4 @@
-package haikudetector
+package syllable
 
 import (
 	"html"
@@ -106,8 +106,8 @@ func (tf TokenizeFunc) Filter(filterFuncs ...TokenFilterFunc) []prose.Token {
 	return tokens
 }
 
-func (c *CMUCorpus) ToSyllableSentence(sentence string, filters ...TokenFilterFunc) (SyllableSentence, error) {
-	syllableSentence := SyllableSentence{}
+func (c *CMUCorpus) ToSyllableSentence(sentence string, filters ...TokenFilterFunc) (Sentence, error) {
+	syllableSentence := Sentence{}
 	sentenceDoc, err := prose.NewDocument(sentence)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error parsing new document %+v", sentence)
@@ -119,7 +119,7 @@ func (c *CMUCorpus) ToSyllableSentence(sentence string, filters ...TokenFilterFu
 		}
 		count, err := c.SyllableCount(v.Text)
 		if err != nil {
-			return SyllableSentence{}, errors.Errorf("Could not find count for [%+v]", v)
+			return Sentence{}, errors.Errorf("Could not find count for [%+v]", v)
 		}
 		syllableSentence = append(syllableSentence, SyllableWord{Word: v, Syllables: count})
 	}

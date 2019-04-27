@@ -1,4 +1,4 @@
-package haikudetector
+package syllable
 
 import (
 	"strings"
@@ -6,9 +6,9 @@ import (
 	prose "gopkg.in/antipasta/prose.v2"
 )
 
-type SyllableSentence []SyllableWord
+type Sentence []SyllableWord
 
-func (s SyllableSentence) TotalSyllables() int {
+func (s Sentence) TotalSyllables() int {
 	total := 0
 	for _, word := range s {
 		total += word.Syllables
@@ -16,7 +16,7 @@ func (s SyllableSentence) TotalSyllables() int {
 	return total
 }
 
-func (s SyllableSentence) Nouns() []string {
+func (s Sentence) Nouns() []string {
 	nouns := []string{}
 	for _, word := range s {
 		if strings.HasPrefix(word.Word.Tag, "N") {
@@ -25,7 +25,7 @@ func (s SyllableSentence) Nouns() []string {
 	}
 	return nouns
 }
-func (s SyllableSentence) Subdivide(sylSizes ...int) Haiku {
+func (s Sentence) Subdivide(sylSizes ...int) Haiku {
 	curSentence := [][]prose.Token{}
 	wordIndex := 0
 	if s.TotalSyllables() < 17 {
