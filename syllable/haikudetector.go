@@ -114,12 +114,12 @@ func (c *CMUCorpus) ToSyllableSentence(sentence string, filters ...TokenFilterFu
 		return nil, errors.Wrapf(err, "Error parsing new document %+v", sentence)
 	}
 	for _, v := range TokenizeFunc(sentenceDoc.Tokens).Filter(filters...) {
-		if IsSymbolOrPunct(&v) {
-			syllableSentence = append(syllableSentence, Word{Word: v, Syllables: 0})
-			continue
-		}
 		count, err := c.SyllableCount(v.Text)
 		if err != nil {
+			if IsSymbolOrPunct(&v) {
+				syllableSentence = append(syllableSentence, Word{Word: v, Syllables: 0})
+				continue
+			}
 			return Sentence{}, errors.Errorf("Could not find count for [%+v]", v)
 		}
 		syllableSentence = append(syllableSentence, Word{Word: v, Syllables: count})

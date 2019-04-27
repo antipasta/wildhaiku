@@ -43,6 +43,11 @@ func TestProblematicHaikus(t *testing.T) {
 			ExpectedOutput: [3]string{"Honey Badger ain't", "scared of nothing. Broad shoulders,", "loose skin. Chuck Schumer?"},
 			Corpus:         cmu,
 		},
+		{
+			Input:          "@LindaBr67589020 @AdamParkhomenko @marcorubio He said that he had no knowledge &amp; yet he now claims that they have known about it since May of last year!  I'm not a mathematician but doesn't November follow May?  He made Nelson look crazy to help Rick Scott win.  He helped Putin &amp; hurt our national security for a party win!  ",
+			ExpectedOutput: [3]string{"He said that he had", "no knowledge & yet he now", "claims that they have known"},
+			Corpus:         cmu,
+		},
 	}
 	for _, h := range cases {
 		log.Printf("Testing %+v", h)

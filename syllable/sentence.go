@@ -2,8 +2,6 @@ package syllable
 
 import (
 	"strings"
-
-	prose "gopkg.in/antipasta/prose.v2"
 )
 
 type Sentence []Word
@@ -26,29 +24,29 @@ func (s Sentence) Nouns() []string {
 	return nouns
 }
 func (s Sentence) Subdivide(sylSizes ...int) Haiku {
-	curSentence := [][]prose.Token{}
+	curSentence := Haiku{}
 	wordIndex := 0
 	if s.TotalSyllables() < 17 {
 		return curSentence
 	}
 	for _, sylSize := range sylSizes {
 		curLineSize := 0
-		haikuLine := []prose.Token{}
+		haikuLine := Sentence{}
 		for ; wordIndex < len(s); wordIndex++ {
 			curWord := s[wordIndex]
 			curSize := curWord.Syllables
 			if curWord.Syllables == 0 {
-				haikuLine = append(haikuLine, s[wordIndex].Word)
+				haikuLine = append(haikuLine, s[wordIndex])
 				continue
 			}
 			if curLineSize+curSize > sylSize {
 				if curLineSize == sylSize {
 					break
 				}
-				return [][]prose.Token{}
+				return Haiku{}
 			}
 			curLineSize += curSize
-			haikuLine = append(haikuLine, s[wordIndex].Word)
+			haikuLine = append(haikuLine, s[wordIndex])
 		}
 		if curLineSize == sylSize {
 			curSentence = append(curSentence, haikuLine)

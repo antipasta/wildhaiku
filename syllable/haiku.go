@@ -4,11 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"strings"
-
-	prose "gopkg.in/antipasta/prose.v2"
 )
 
-type Haiku [][]prose.Token
+type Haiku Paragraph
 
 func (h Haiku) MarshalJSON() ([]byte, error) {
 	haikuStrArr := h.ToStringSlice()
@@ -20,15 +18,16 @@ func (h Haiku) ToStringArray() [3]string {
 	for lineIndex, line := range h {
 		haikuLine := bytes.Buffer{}
 		for wordIndex := range line {
-			if IsSymbolOrPunct(&line[wordIndex]) {
+			if line[wordIndex].Syllables == 0 && IsSymbolOrPunct(&line[wordIndex].Word) {
 				continue
 			}
 			if wordIndex > 0 {
 				haikuLine.WriteString(" ")
 			}
-			haikuLine.WriteString(line[wordIndex].Text)
-			if wordIndex+1 < len(line) && IsSymbolOrPunct(&line[wordIndex+1]) {
-				haikuLine.WriteString(line[wordIndex+1].Text)
+			haikuLine.WriteString(line[wordIndex].Word.Text)
+
+			if wordIndex+1 < len(line) && line[wordIndex+1].Syllables == 0 && IsSymbolOrPunct(&line[wordIndex+1].Word) {
+				haikuLine.WriteString(line[wordIndex+1].Word.Text)
 			}
 		}
 		haikuLines[lineIndex] = haikuLine.String()
