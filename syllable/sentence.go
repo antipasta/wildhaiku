@@ -36,13 +36,16 @@ func (s Sentence) Subdivide(sylSizes ...int) Haiku {
 			curWord := s[wordIndex]
 			curSize := curWord.Syllables
 			if curWord.Syllables == 0 {
+				// append any symbols or punctuation
 				haikuLine = append(haikuLine, s[wordIndex])
 				continue
 			}
+			if curLineSize == sylSize {
+				// next line of haiku
+				break
+			}
 			if curLineSize+curSize > sylSize {
-				if curLineSize == sylSize {
-					break
-				}
+				// we're over, give up
 				return Haiku{}
 			}
 			curLineSize += curSize

@@ -3,10 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
+	"strings"
 	"time"
 
+	"github.com/antipasta/wildhaiku/syllable"
 	"github.com/gookit/color"
 	"github.com/pkg/errors"
 )
@@ -18,18 +19,54 @@ a
 and
 are
 his
+but
+to
+is
+in?
+he?
+she?
+as
+our
 */
+
+var suffixBlacklist = map[string]bool{
+	"or":  true,
+	"a":   true,
+	"and": true,
+	"are": true,
+	"his": true,
+	"but": true,
+	"to":  true,
+	"is":  true,
+	"in":  true,
+	"he":  true,
+	"she": true,
+	"as":  true,
+	"our": true,
+	"the": true,
+	"of":  true,
+	"if":  true,
+	"an":  true,
+	//"my":  true,
+}
 
 func (ts *TweetStreamer) Output(out *HaikuOutput) error {
 	if len(out.Haikus) == 0 {
 		return nil
 	}
-	t := out.Tweet
-	log.Printf("https://twitter.com/%v/status/%v %v", t.User.ScreenName, t.IDStr, t.FullText())
+	filteredHaikus := []syllable.Haiku{}
 	for i, foundHaiku := range out.Haikus {
-		color.Cyan.Printf("%d. %s\n\n", i+1, foundHaiku.String())
+		if !suffixBlacklist[strings.ToLower(foundHaiku.FinalWord())] {
+			filteredHaikus = append(filteredHaikus, foundHaiku)
+			color.Cyan.Printf("%d. %s\n\n", i+1, foundHaiku.String())
+		}
 
 	}
+	if len(filteredHaikus) == 0 {
+		// filtered out some junk
+		return nil
+	}
+	out.Haikus = filteredHaikus
 	bytes, err := json.Marshal(out)
 	if err != nil {
 		panic(err)

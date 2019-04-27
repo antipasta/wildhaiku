@@ -74,11 +74,12 @@ func main() {
 		go ts.ProcessLoop()
 	}
 	go ts.OutputLoop()
-	err = ts.StreamLoop()
-	if err != nil {
-		panic(err)
+	for {
+		err = ts.StreamLoop()
+		if err != nil {
+			log.Printf("Got stream error %+v. Reconnecting", err)
+		}
 	}
-
 }
 
 func NewTweetStreamer(cfg *StreamerConfig) *TweetStreamer {
@@ -137,7 +138,7 @@ func (ts *TweetStreamer) StreamLoop() error {
 		t := Tweet{}
 		err = json.Unmarshal(line, &t)
 		if err != nil {
-			log.Printf("Error parsing %+v", line)
+			log.Printf("Error parsing %+v", string(line))
 			continue
 		}
 		if t.RetweetedStatus != nil {

@@ -41,3 +41,8 @@ func (h Haiku) ToStringSlice() []string {
 func (h Haiku) String() string {
 	return strings.Join(h.ToStringSlice(), "\n")
 }
+
+func (h Haiku) FinalWord() string {
+	finalLine := h[len(h)-1]
+	return finalLine[len(finalLine)-1].Word.Text
+}

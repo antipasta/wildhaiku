@@ -14,7 +14,7 @@ type PreProcessFunc func(string) string
 
 type CMUCorpus struct {
 	PreProcess []PreProcessFunc
-	Dict       map[string][]string
+	Dict       map[string]int
 }
 type Word struct {
 	Word      prose.Token
@@ -22,7 +22,7 @@ type Word struct {
 }
 
 func LoadCMUCorpus(path string) (*CMUCorpus, error) {
-	c := CMUCorpus{Dict: map[string][]string{},
+	c := CMUCorpus{Dict: map[string]int{},
 		PreProcess: []PreProcessFunc{html.UnescapeString},
 	}
 	cmuBytes, err := ioutil.ReadFile(path)
@@ -33,19 +33,14 @@ func LoadCMUCorpus(path string) (*CMUCorpus, error) {
 	cmuLines := strings.Split(cmuStr, "\n")
 	for _, line := range cmuLines {
 		words := strings.Split(line, " ")
-		c.Dict[words[0]] = words[1:]
+		c.Dict[words[0]] = c.countFromPhenomes(words[1:])
 	}
 
 	return &c, nil
 }
 
-func (c *CMUCorpus) SyllableCount(word string) (int, error) {
+func (c *CMUCorpus) countFromPhenomes(phenomes []string) int {
 	syllables := 0
-	lowerWord := strings.ToLower(word)
-	phenomes, exists := c.Dict[lowerWord]
-	if !exists || len(phenomes) == 0 {
-		return 0, errors.Errorf("Word not found %v", lowerWord)
-	}
 
 	for _, phenome := range phenomes {
 		for _, char := range phenome {
@@ -56,14 +51,22 @@ func (c *CMUCorpus) SyllableCount(word string) (int, error) {
 		}
 	}
 
-	return syllables, nil
+	return syllables
 
+}
+func (c *CMUCorpus) SyllableCount(word string) (int, error) {
+	lowerWord := strings.ToLower(word)
+	phenomes, exists := c.Dict[lowerWord]
+	if !exists {
+		return 0, errors.Errorf("Word not found %v", lowerWord)
+	}
+	return phenomes, nil
 }
 
 func (c *CMUCorpus) HasSyllableCount(word string) bool {
 	lowerWord := strings.ToLower(word)
 	phenomes, exists := c.Dict[lowerWord]
-	return exists && len(phenomes) > 0
+	return exists && phenomes > 0
 }
 
 func IsSymbolOrPunct(token *prose.Token) bool {

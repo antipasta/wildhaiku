@@ -55,7 +55,7 @@ func TestProblematicHaikus(t *testing.T) {
 		},
 	}
 	for _, h := range cases {
-		log.Printf("Testing %+v", h)
+		//log.Printf("Testing %+v", h)
 		h.HaikuTest(t)
 	}
 
