@@ -48,6 +48,11 @@ func TestProblematicHaikus(t *testing.T) {
 			ExpectedOutput: [3]string{"He said that he had", "no knowledge & yet he now", "claims that they have known"},
 			Corpus:         cmu,
 		},
+		{
+			Input:          "\"He asked me where I wanted to play and I told him, I want to go to Buffalo.\"\n\nWe're pumped to have you, Cody. #BillsMafia https://t.co/kLZ6ddIoLo",
+			ExpectedOutput: [3]string{"He asked me where I", "wanted to play and I told", "him, I want to go"},
+			Corpus:         cmu,
+		},
 	}
 	for _, h := range cases {
 		log.Printf("Testing %+v", h)
@@ -62,7 +67,7 @@ func (eh *ExpectedHaiku) HaikuTest(t *testing.T) []Haiku {
 	if len(foundHaikus) == 0 {
 		t.Errorf("Found no haikus for text %v", eh.Input)
 	} else if foundHaikus[0].ToStringArray() != eh.ExpectedOutput {
-		t.Errorf("Output [%v] does not match expected [%+v]", foundHaikus[0].String(), eh.ExpectedOutput)
+		t.Errorf("Output [%v] does not match expected [%+v]", foundHaikus[0].ToStringArray(), eh.ExpectedOutput)
 	}
 	return foundHaikus
 }

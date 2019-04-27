@@ -36,13 +36,14 @@ type TweetStreamer struct {
 }
 
 type StreamerConfig struct {
-	ConsumerKey      string
-	ConsumerSecret   string
-	AccessToken      string
-	AccessSecret     string
-	TrackingKeywords []string
-	CorpusPath       string
-	OutputPath       string
+	ConsumerKey        string
+	ConsumerSecret     string
+	AccessToken        string
+	AccessSecret       string
+	TrackingKeywords   []string
+	CorpusPath         string
+	OutputPath         string
+	ProcessWorkerCount int
 }
 
 func LoadConfig(path string) (*StreamerConfig, error) {
@@ -69,7 +70,9 @@ func main() {
 		panic(err)
 	}
 	ts := NewTweetStreamer(cfg)
-	go ts.ProcessLoop()
+	for i := 0; i < cfg.ProcessWorkerCount; i++ {
+		go ts.ProcessLoop()
+	}
 	go ts.OutputLoop()
 	err = ts.StreamLoop()
 	if err != nil {
@@ -180,6 +183,9 @@ func (ts *TweetStreamer) Process(t *Tweet) *HaikuOutput {
 func (ts *TweetStreamer) ProcessLoop() error {
 	for tweet := range ts.ProcessChannel {
 		output := ts.Process(tweet)
+		if len(ts.ProcessChannel) > 0 {
+			log.Printf("Channel size is %+v", len(ts.ProcessChannel))
+		}
 		if len(output.Haikus) > 0 {
 			ts.OutputChannel <- output
 		}

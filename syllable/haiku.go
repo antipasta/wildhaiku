@@ -21,7 +21,7 @@ func (h Haiku) ToStringArray() [3]string {
 			if line[wordIndex].Syllables == 0 && IsSymbolOrPunct(&line[wordIndex].Word) {
 				continue
 			}
-			if wordIndex > 0 {
+			if wordIndex > 0 && haikuLine.Len() > 0 {
 				haikuLine.WriteString(" ")
 			}
 			haikuLine.WriteString(line[wordIndex].Word.Text)

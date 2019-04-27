@@ -11,6 +11,15 @@ import (
 	"github.com/pkg/errors"
 )
 
+/*
+TODO filter out anything ending in
+or
+a
+and
+are
+his
+*/
+
 func (ts *TweetStreamer) Output(out *HaikuOutput) error {
 	if len(out.Haikus) == 0 {
 		return nil
@@ -18,7 +27,7 @@ func (ts *TweetStreamer) Output(out *HaikuOutput) error {
 	t := out.Tweet
 	log.Printf("https://twitter.com/%v/status/%v %v", t.User.ScreenName, t.IDStr, t.FullText())
 	for i, foundHaiku := range out.Haikus {
-		color.Cyan.Printf("%d. %s\n", i+1, foundHaiku.String())
+		color.Cyan.Printf("%d. %s\n\n", i+1, foundHaiku.String())
 
 	}
 	bytes, err := json.Marshal(out)
