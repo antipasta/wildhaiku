@@ -11,13 +11,13 @@ import (
 type Haiku [][]prose.Token
 
 func (h Haiku) MarshalJSON() ([]byte, error) {
-	haikuStrArr := h.ToStringArray()
+	haikuStrArr := h.ToStringSlice()
 	return json.Marshal(haikuStrArr)
 }
 
-func (h Haiku) ToStringArray() []string {
-	haikuLines := []string{}
-	for _, line := range h {
+func (h Haiku) ToStringArray() [3]string {
+	haikuLines := [3]string{}
+	for lineIndex, line := range h {
 		haikuLine := bytes.Buffer{}
 		for wordIndex := range line {
 			if len(line[wordIndex].Tag) == 1 {
@@ -31,10 +31,14 @@ func (h Haiku) ToStringArray() []string {
 				haikuLine.WriteString(line[wordIndex+1].Text)
 			}
 		}
-		haikuLines = append(haikuLines, haikuLine.String())
+		haikuLines[lineIndex] = haikuLine.String()
 	}
 	return haikuLines
 }
+func (h Haiku) ToStringSlice() []string {
+	haikuArr := h.ToStringArray()
+	return haikuArr[:]
+}
 func (h Haiku) String() string {
-	return strings.Join(h.ToStringArray(), "\n")
+	return strings.Join(h.ToStringSlice(), "\n")
 }

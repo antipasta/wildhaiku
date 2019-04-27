@@ -4,18 +4,15 @@ import (
 	"bufio"
 	"encoding/json"
 	"flag"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
-	"time"
 
 	"github.com/antipasta/wildhaiku/syllable"
 	"github.com/gomodule/oauth1/oauth"
-	"github.com/gookit/color"
 	"github.com/pkg/errors"
 )
 
@@ -156,13 +153,11 @@ type Tweet struct {
 	User  struct {
 		ScreenName string `json:"screen_name"`
 	} `json:"user"`
-	Text            string         `json:"text,omitempty"`
-	ExtendedTweet   *ExtendedTweet `json:"extended_tweet,omitempty"`
-	RetweetedStatus *Tweet         `json:"retweeted_status,omitempty"`
-}
-
-type ExtendedTweet struct {
-	FullText string `json:"full_text,omitempty"`
+	Text          string `json:"text,omitempty"`
+	ExtendedTweet *struct {
+		FullText string `json:"full_text,omitempty"`
+	} `json:"extended_tweet,omitempty"`
+	RetweetedStatus *Tweet `json:"retweeted_status,omitempty"`
 }
 
 func (t *Tweet) FullText() string {
@@ -177,7 +172,7 @@ func (ts *TweetStreamer) Process(t *Tweet) *HaikuOutput {
 	foundHaikus := paragraph.Subdivide(5, 7, 5)
 	haikuStrings := [][]string{}
 	for _, haiku := range foundHaikus {
-		haikuStrings = append(haikuStrings, haiku.ToStringArray())
+		haikuStrings = append(haikuStrings, haiku.ToStringSlice())
 	}
 	return &HaikuOutput{Tweet: t, Haikus: foundHaikus}
 }
@@ -189,43 +184,6 @@ func (ts *TweetStreamer) ProcessLoop() error {
 			ts.OutputChannel <- output
 		}
 
-	}
-	return nil
-}
-
-func (ts *TweetStreamer) Output(out *HaikuOutput) error {
-	if len(out.Haikus) == 0 {
-		return nil
-	}
-	t := out.Tweet
-	log.Printf("https://twitter.com/%v/status/%v %v", t.User.ScreenName, t.IDStr, t.FullText())
-	for i, foundHaiku := range out.Haikus {
-		color.Cyan.Printf("%d. %s\n", i+1, foundHaiku.String())
-
-	}
-	bytes, err := json.Marshal(out)
-	if err != nil {
-		panic(err)
-	}
-	//log.Printf(string(bytes))
-	_, err = ts.OutFile.WriteString(fmt.Sprintf("%s\n", string(bytes)))
-	if err != nil {
-		return errors.Wrapf(err, "Error writing to file %s", ts.OutFile.Name())
-	}
-	return nil
-}
-
-func (ts *TweetStreamer) OutputLoop() error {
-	now := time.Now().UTC()
-	fileName := fmt.Sprintf("haiku_%s.json", now.Format(time.RFC3339))
-	filePath := fmt.Sprintf("%s/%s", ts.Config.OutputPath, fileName)
-	var err error
-	ts.OutFile, err = os.Create(filePath)
-	if err != nil {
-		return errors.Wrapf(err, "Error creating file %s", filePath)
-	}
-	for tweet := range ts.OutputChannel {
-		ts.Output(tweet)
 	}
 	return nil
 }
