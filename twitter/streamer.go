@@ -21,14 +21,10 @@ type Streamer struct {
 	Client         *oauth.Client
 	httpClient     *http.Client
 	ProcessChannel chan *Tweet
-	//corpus         *syllable.CMUCorpus
-	//OutputChannel  chan *output.Haiku
-	//OutFile *os.File
 }
 
 func NewStreamer(cfg *config.Streamer) *Streamer {
 	processChannel := make(chan *Tweet, 10000)
-	//outChannel := make(chan *output.Haiku, 10000)
 	consumerKeys := oauth.Credentials{
 		Token:  cfg.ConsumerKey,
 		Secret: cfg.ConsumerSecret,
