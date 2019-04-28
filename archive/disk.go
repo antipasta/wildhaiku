@@ -14,34 +14,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-type DiskArchiver struct {
-	ArchiveChannel chan *haiku.Output
-	OutFile        *os.File
-	Config         *config.Streamer
-}
-
-func NewDiskArchiver(cfg *config.Streamer) (*DiskArchiver, error) {
-	archiveChan := make(chan *haiku.Output, 10000)
-	return &DiskArchiver{Config: cfg, ArchiveChannel: archiveChan}, nil
-}
-
-/*
-TODO filter out anything ending in
-or
-a
-and
-are
-his
-but
-to
-is
-in?
-he?
-she?
-as
-our
-*/
-
 var suffixBlacklist = map[string]bool{
 	"or":  true,
 	"a":   true,
@@ -60,7 +32,18 @@ var suffixBlacklist = map[string]bool{
 	"of":  true,
 	"if":  true,
 	"an":  true,
-	//"my":  true,
+	"my":  true,
+}
+
+type DiskArchiver struct {
+	ArchiveChannel chan *haiku.Output
+	OutFile        *os.File
+	Config         *config.Streamer
+}
+
+func NewDiskArchiver(cfg *config.Streamer) (*DiskArchiver, error) {
+	archiveChan := make(chan *haiku.Output, 10000)
+	return &DiskArchiver{Config: cfg, ArchiveChannel: archiveChan}, nil
 }
 
 func (da *DiskArchiver) Output(out *haiku.Output) error {
