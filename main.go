@@ -39,7 +39,7 @@ func main() {
 	for i := 0; i < cfg.ProcessWorkerCount; i++ {
 		go haikuProcessor.ProcessLoop()
 	}
-	//go ts.OutputLoop()
+
 	for {
 		err = ts.StreamLoop()
 		if err != nil {
