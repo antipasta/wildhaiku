@@ -15,8 +15,8 @@ type Output struct {
 }
 
 type Processor struct {
-	InputChannel  chan *twitter.Tweet
-	OutputChannel chan *Output
+	InputChannel  <-chan *twitter.Tweet
+	OutputChannel chan<- *Output
 	Config        *config.Streamer
 	corpus        *syllable.CMUCorpus
 }
