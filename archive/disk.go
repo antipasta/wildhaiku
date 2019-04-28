@@ -1,4 +1,4 @@
-package main
+package archive
 
 import (
 	"encoding/json"
@@ -7,10 +7,23 @@ import (
 	"strings"
 	"time"
 
+	"github.com/antipasta/wildhaiku/config"
+	"github.com/antipasta/wildhaiku/haiku"
 	"github.com/antipasta/wildhaiku/syllable"
 	"github.com/gookit/color"
 	"github.com/pkg/errors"
 )
+
+type DiskArchiver struct {
+	ArchiveChannel chan *haiku.Output
+	OutFile        *os.File
+	Config         *config.Streamer
+}
+
+func NewDiskArchiver(cfg *config.Streamer) (*DiskArchiver, error) {
+	archiveChan := make(chan *haiku.Output, 10000)
+	return &DiskArchiver{Config: cfg, ArchiveChannel: archiveChan}, nil
+}
 
 /*
 TODO filter out anything ending in
@@ -50,7 +63,7 @@ var suffixBlacklist = map[string]bool{
 	//"my":  true,
 }
 
-func (ts *TweetStreamer) Output(out *HaikuOutput) error {
+func (da *DiskArchiver) Output(out *haiku.Output) error {
 	if len(out.Haikus) == 0 {
 		return nil
 	}
@@ -72,24 +85,24 @@ func (ts *TweetStreamer) Output(out *HaikuOutput) error {
 		panic(err)
 	}
 	//log.Printf(string(bytes))
-	_, err = ts.OutFile.WriteString(fmt.Sprintf("%s\n", string(bytes)))
+	_, err = da.OutFile.WriteString(fmt.Sprintf("%s\n", string(bytes)))
 	if err != nil {
-		return errors.Wrapf(err, "Error writing to file %s", ts.OutFile.Name())
+		return errors.Wrapf(err, "Error writing to file %s", da.OutFile.Name())
 	}
 	return nil
 }
 
-func (ts *TweetStreamer) OutputLoop() error {
+func (da *DiskArchiver) OutputLoop() error {
 	now := time.Now().UTC()
 	fileName := fmt.Sprintf("haiku_%s.json", now.Format(time.RFC3339))
-	filePath := fmt.Sprintf("%s/%s", ts.Config.OutputPath, fileName)
+	filePath := fmt.Sprintf("%s/%s", da.Config.OutputPath, fileName)
 	var err error
-	ts.OutFile, err = os.Create(filePath)
+	da.OutFile, err = os.Create(filePath)
 	if err != nil {
 		return errors.Wrapf(err, "Error creating file %s", filePath)
 	}
-	for tweet := range ts.OutputChannel {
-		ts.Output(tweet)
+	for tweet := range da.ArchiveChannel {
+		da.Output(tweet)
 	}
 	return nil
 }
