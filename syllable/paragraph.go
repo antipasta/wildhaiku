@@ -27,36 +27,48 @@ func (p Paragraph) Subdivide(sylSizes ...int) []Haiku {
 }
 func (p Paragraph) ToCombinedSentence() Sentence {
 	combinedSentence := Sentence{}
-	for _, sentence := range p {
-		combinedSentence = append(combinedSentence, sentence...)
+	for i := range p {
+		combinedSentence = append(combinedSentence, p[i]...)
 	}
 	return combinedSentence
 
 }
 
-func (c *CMUCorpus) ToSyllableParagraph(sentence string) Paragraph {
+func (p Paragraph) TotalSyllables() int {
+	total := 0
+	for _, sentence := range p {
+		total += sentence.TotalSyllables()
+	}
+	return total
+}
+
+func (c *CMUCorpus) NewParagraph(sentence string) Paragraph {
 	for _, pFunc := range c.PreProcess {
 		sentence = pFunc(sentence)
 	}
 	paragraph := Paragraph{}
-	sentenceDoc, err := prose.NewDocument(sentence, prose.WithExtraction(false), prose.WithTagging(false), prose.WithTokenization(false))
+	sentenceDoc, err := prose.NewDocument(sentence,
+		prose.WithExtraction(false),
+		prose.WithTagging(false),
+		prose.WithTokenization(false),
+		prose.UsingModel(nil))
 	if err != nil {
 		log.Fatal(err)
 	}
-	tokenFilters := []TokenFilterFunc{}
 	sentences := sentenceDoc.Sentences()
 	for i, sentence := range sentences {
+		tokenFilters := []TokenFilterFunc{}
 		if i == 0 {
 			tokenFilters = append(tokenFilters, c.TrimStartingUnknowns)
 		}
 		if i == len(sentences)-1 {
 			tokenFilters = append(tokenFilters, c.TrimTrailingUnknowns)
 		}
-		sentenceObj, err := c.ToSyllableSentence(sentence.Text, tokenFilters...)
+		sentenceObj, err := c.NewSentence(sentence.Text, tokenFilters...)
 		if err != nil {
 			// Got an error mid sentence after filtering, bail
 			//log.Printf("Got error when parsing sentence syllables %v", err)
-			if paragraph.ToCombinedSentence().TotalSyllables() >= 17 {
+			if paragraph.TotalSyllables() >= 17 {
 				// Without this sentence we have more than enough to attempt to find a haiku, return what we found so far
 				return paragraph
 			}

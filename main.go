@@ -42,8 +42,12 @@ func main() {
 		go haikuProcessor.ProcessLoop()
 	}
 
-	for {
-		err = ts.StreamLoop()
+	for resp, err := ts.Connect(); ; {
+		defer resp.Body.Close()
+		if err != nil {
+			log.Fatalf("Got error when connecting to twitter stream: %v", err)
+		}
+		err = ts.StreamLoop(resp.Body)
 		if err != nil {
 			log.Printf("Got stream error %+v. Reconnecting", err)
 		}

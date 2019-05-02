@@ -109,10 +109,14 @@ func (tf TokenizeFunc) Filter(filterFuncs ...TokenFilterFunc) []prose.Token {
 	return tokens
 }
 
-func (c *CMUCorpus) ToSyllableSentence(sentence string, filters ...TokenFilterFunc) (Sentence, error) {
+func (c *CMUCorpus) NewSentence(sentence string, filters ...TokenFilterFunc) (Sentence, error) {
 	syllableSentence := Sentence{}
 
-	sentenceDoc, err := prose.NewDocument(sentence, prose.WithExtraction(false), prose.WithTagging(false), prose.WithTokenization(true))
+	sentenceDoc, err := prose.NewDocument(sentence,
+		prose.WithTokenization(true),
+		prose.WithExtraction(false),
+		prose.WithTagging(false),
+		prose.UsingModel(nil))
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error parsing new document %+v", sentence)
 	}

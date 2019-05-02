@@ -62,7 +62,7 @@ func TestProblematicHaikus(t *testing.T) {
 }
 
 func (eh *ExpectedHaiku) HaikuTest(t *testing.T) []Haiku {
-	paragraph := eh.Corpus.ToSyllableParagraph(eh.Input)
+	paragraph := eh.Corpus.NewParagraph(eh.Input)
 	foundHaikus := paragraph.Subdivide(5, 7, 5)
 	if len(foundHaikus) == 0 {
 		t.Errorf("Found no haikus for text %v", eh.Input)

@@ -48,11 +48,11 @@ func (p *Processor) ProcessLoop() error {
 }
 
 func (p *Processor) process(t *twitter.Tweet) *Output {
-	paragraph := p.corpus.ToSyllableParagraph(t.FullText())
+	paragraph := p.corpus.NewParagraph(t.FullText())
 	foundHaikus := paragraph.Subdivide(5, 7, 5)
-	haikuStrings := [][]string{}
+	haikuStrings := [][3]string{}
 	for _, haiku := range foundHaikus {
-		haikuStrings = append(haikuStrings, haiku.ToStringSlice())
+		haikuStrings = append(haikuStrings, haiku.ToStringArray())
 	}
 	return &Output{Tweet: t, Haikus: foundHaikus}
 }

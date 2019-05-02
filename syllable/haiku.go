@@ -9,7 +9,7 @@ import (
 type Haiku Paragraph
 
 func (h Haiku) MarshalJSON() ([]byte, error) {
-	haikuStrArr := h.ToStringSlice()
+	haikuStrArr := h.ToStringArray()
 	return json.Marshal(haikuStrArr)
 }
 

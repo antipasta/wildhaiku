@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -77,11 +78,27 @@ func (da *DiskArchiver) output(out *haiku.Output) error {
 func (da *DiskArchiver) OutputLoop() error {
 	now := time.Now().UTC()
 	fileName := fmt.Sprintf("haiku_%s.json", now.Format(time.RFC3339))
-	filePath := fmt.Sprintf("%s/%s", da.Config.OutputPath, fileName)
+	filePath := filepath.Join(da.Config.OutputPath, fileName)
+	symLink := filepath.Join(da.Config.OutputPath, "current.json")
 	var err error
 	da.OutFile, err = os.Create(filePath)
+	defer da.OutFile.Close()
 	if err != nil {
 		return errors.Wrapf(err, "Error creating file %s", filePath)
+	}
+	absPath, err := filepath.Abs(filePath)
+	if err != nil {
+		return err
+	}
+	if os.Lstat(symLink); err == nil {
+		err = os.Remove(symLink)
+		if err != nil {
+			return errors.Wrapf(err, "Error removing symlink %v", symLink)
+		}
+	}
+	err = os.Symlink(absPath, symLink)
+	if err != nil {
+		return err
 	}
 	for tweet := range da.ArchiveChannel {
 		da.output(tweet)
