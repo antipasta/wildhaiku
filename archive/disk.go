@@ -46,7 +46,7 @@ func NewDiskArchiver(cfg *config.Streamer) (*DiskArchiver, error) {
 	return &DiskArchiver{Config: cfg, ArchiveChannel: archiveChan}, nil
 }
 
-func (da *DiskArchiver) Output(out *haiku.Output) error {
+func (da *DiskArchiver) output(out *haiku.Output) error {
 	if len(out.Haikus) == 0 {
 		return nil
 	}
@@ -67,7 +67,6 @@ func (da *DiskArchiver) Output(out *haiku.Output) error {
 	if err != nil {
 		panic(err)
 	}
-	//log.Printf(string(bytes))
 	_, err = da.OutFile.WriteString(fmt.Sprintf("%s\n", string(bytes)))
 	if err != nil {
 		return errors.Wrapf(err, "Error writing to file %s", da.OutFile.Name())
@@ -85,7 +84,7 @@ func (da *DiskArchiver) OutputLoop() error {
 		return errors.Wrapf(err, "Error creating file %s", filePath)
 	}
 	for tweet := range da.ArchiveChannel {
-		da.Output(tweet)
+		da.output(tweet)
 	}
 	return nil
 }

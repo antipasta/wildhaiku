@@ -15,37 +15,39 @@ type Output struct {
 }
 
 type Processor struct {
-	InputChannel  <-chan *twitter.Tweet
-	OutputChannel chan<- *Output
+	inputChannel  <-chan *twitter.Tweet
+	outputChannel chan<- *Output
 	Config        *config.Streamer
 	corpus        *syllable.CMUCorpus
 }
 
-func NewProcessor(cfg *config.Streamer) (*Processor, error) {
+func NewProcessor(cfg *config.Streamer, tweetIn <-chan *twitter.Tweet, processedOut chan<- *Output) (*Processor, error) {
 	cmu, err := syllable.LoadCMUCorpus(cfg.CorpusPath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error loading CMU corpus from %v", cfg.CorpusPath)
 	}
 	return &Processor{
-		corpus: cmu,
+		corpus:        cmu,
+		inputChannel:  tweetIn,
+		outputChannel: processedOut,
 	}, nil
 }
 
 func (p *Processor) ProcessLoop() error {
-	for tweet := range p.InputChannel {
-		output := p.Process(tweet)
-		if len(p.InputChannel) > 0 {
-			log.Printf("Channel size is %+v", len(p.InputChannel))
+	for tweet := range p.inputChannel {
+		output := p.process(tweet)
+		if len(p.inputChannel) > 0 {
+			log.Printf("Channel size is %+v", len(p.inputChannel))
 		}
 		if len(output.Haikus) > 0 {
-			p.OutputChannel <- output
+			p.outputChannel <- output
 		}
 
 	}
 	return nil
 }
 
-func (p *Processor) Process(t *twitter.Tweet) *Output {
+func (p *Processor) process(t *twitter.Tweet) *Output {
 	paragraph := p.corpus.ToSyllableParagraph(t.FullText())
 	foundHaikus := paragraph.Subdivide(5, 7, 5)
 	haikuStrings := [][]string{}

@@ -1,9 +1,5 @@
 package syllable
 
-import (
-	"strings"
-)
-
 type Sentence []Word
 
 func (s Sentence) TotalSyllables() int {
@@ -14,15 +10,6 @@ func (s Sentence) TotalSyllables() int {
 	return total
 }
 
-func (s Sentence) Nouns() []string {
-	nouns := []string{}
-	for _, word := range s {
-		if strings.HasPrefix(word.Word.Tag, "N") {
-			nouns = append(nouns, word.Word.Text)
-		}
-	}
-	return nouns
-}
 func (s Sentence) Subdivide(sylSizes ...int) Haiku {
 	curSentence := Haiku{}
 	wordIndex := 0

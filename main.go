@@ -16,22 +16,24 @@ func init() {
 	flag.StringVar(&flagConfigPath, "config", "config.json", "Path to config file")
 }
 
+func NewStreamChannel() chan *twitter.Tweet {
+	return make(chan *twitter.Tweet, 10000)
+}
+
 func main() {
 	flag.Parse()
 	cfg, err := config.Load(flagConfigPath)
 	if err != nil {
-		panic(err)
+		log.Fatalf("Error loading config file[%v]: %v", flagConfigPath, err)
 	}
 	ts := twitter.NewStreamer(cfg)
 	diskArchiver, err := archive.NewDiskArchiver(cfg)
 	if err != nil {
-		panic(err)
+		log.Fatalf("Error initializing disk archiver: %v", err)
 	}
-	haikuProcessor, err := haiku.NewProcessor(cfg)
-	haikuProcessor.InputChannel = ts.ProcessChannel
-	haikuProcessor.OutputChannel = diskArchiver.ArchiveChannel
+	haikuProcessor, err := haiku.NewProcessor(cfg, ts.ProcessChannel, diskArchiver.ArchiveChannel)
 	if err != nil {
-		panic(err)
+		log.Fatalf("Error initializing haiku processor: %v", err)
 	}
 
 	go diskArchiver.OutputLoop()
