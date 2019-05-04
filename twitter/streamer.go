@@ -98,6 +98,10 @@ func (ts *Streamer) ParseTweet(inBytes []byte) (*Tweet, error) {
 		log.Printf("Error json decoding line [%v]: %v", string(inBytes), err)
 		return nil, errors.Errorf("Error json decoding line [%v]: %v", string(inBytes), err)
 	}
+	if t.RetweetedStatus != nil {
+		// A standard retweet does not have any additional text, may as well work off original for proper attribution
+		t = *t.RetweetedStatus
+	}
 	if t.FullText() == "" {
 		return nil, nil
 	}
