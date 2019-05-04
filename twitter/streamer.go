@@ -80,6 +80,11 @@ func (ts *Streamer) TweetFromInput(reader *bufio.Reader) (*Tweet, error) {
 		log.Printf("Got no bytes")
 		return nil, nil
 	}
+	if string(inBytes) == "\r\n" {
+		// return nil and keep going
+		log.Printf("Got keepalive ping")
+		return nil, nil
+	}
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error when trying to read from tweet stream")
 	}
