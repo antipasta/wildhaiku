@@ -17,11 +17,11 @@ type Output struct {
 type Processor struct {
 	inputChannel  <-chan *twitter.Tweet
 	outputChannel chan<- *Output
-	Config        *config.Streamer
+	Config        *config.WildHaiku
 	corpus        *syllable.CMUCorpus
 }
 
-func NewProcessor(cfg *config.Streamer, tweetIn <-chan *twitter.Tweet, processedOut chan<- *Output) (*Processor, error) {
+func NewProcessor(cfg *config.WildHaiku, tweetIn <-chan *twitter.Tweet, processedOut chan<- *Output) (*Processor, error) {
 	cmu, err := syllable.LoadCMUCorpus(cfg.CorpusPath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error loading CMU corpus from %v", cfg.CorpusPath)

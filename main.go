@@ -16,10 +16,6 @@ func init() {
 	flag.StringVar(&flagConfigPath, "config", "config.json", "Path to config file")
 }
 
-func NewStreamChannel() chan *twitter.Tweet {
-	return make(chan *twitter.Tweet, 10000)
-}
-
 func main() {
 	flag.Parse()
 	cfg, err := config.Load(flagConfigPath)

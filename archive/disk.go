@@ -16,33 +16,36 @@ import (
 )
 
 var suffixBlacklist = map[string]bool{
-	"or":  true,
-	"a":   true,
-	"and": true,
-	"are": true,
-	"his": true,
-	"but": true,
-	"to":  true,
-	"is":  true,
-	"in":  true,
-	"he":  true,
-	"she": true,
-	"as":  true,
-	"our": true,
-	"the": true,
-	"of":  true,
-	"if":  true,
-	"an":  true,
-	"my":  true,
+	"or":   true,
+	"a":    true,
+	"and":  true,
+	"are":  true,
+	"his":  true,
+	"but":  true,
+	"to":   true,
+	"is":   true,
+	"in":   true,
+	"he":   true,
+	"she":  true,
+	"as":   true,
+	"our":  true,
+	"the":  true,
+	"of":   true,
+	"if":   true,
+	"an":   true,
+	"my":   true,
+	"your": true,
 }
 
+// DiskArchiver receives *haiku.Output over a channel and writes to disk
 type DiskArchiver struct {
 	ArchiveChannel chan *haiku.Output
 	OutFile        *os.File
-	Config         *config.Streamer
+	Config         *config.WildHaiku
 }
 
-func NewDiskArchiver(cfg *config.Streamer) (*DiskArchiver, error) {
+// NewDiskArchiver creates an instance of DiskArchiver
+func NewDiskArchiver(cfg *config.WildHaiku) (*DiskArchiver, error) {
 	archiveChan := make(chan *haiku.Output, 10000)
 	return &DiskArchiver{Config: cfg, ArchiveChannel: archiveChan}, nil
 }
@@ -75,6 +78,7 @@ func (da *DiskArchiver) output(out *haiku.Output) error {
 	return nil
 }
 
+//OutputLoop writes haiku.Output to disk, in a timestampped file based on when the function is first entered. Also creates a symlink current.json pointing at the file being written to
 func (da *DiskArchiver) OutputLoop() error {
 	now := time.Now().UTC()
 	fileName := fmt.Sprintf("haiku_%s.json", now.Format(time.RFC3339))

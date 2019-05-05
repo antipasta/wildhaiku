@@ -5,7 +5,8 @@ import (
 	"io/ioutil"
 )
 
-type Streamer struct {
+// WildHaiku holds all configuration needed to run the WildHaiku daemon
+type WildHaiku struct {
 	ConsumerKey        string
 	ConsumerSecret     string
 	AccessToken        string
@@ -16,8 +17,9 @@ type Streamer struct {
 	ProcessWorkerCount int
 }
 
-func Load(path string) (*Streamer, error) {
-	cfg := Streamer{}
+// Load takes the path to the wildhaiku config, and returns an instance of a *WildHaiku config. Errors if file cannot be read or does not parse correctly
+func Load(path string) (*WildHaiku, error) {
+	cfg := WildHaiku{}
 	cfgBytes, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err

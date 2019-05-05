@@ -15,7 +15,7 @@ import (
 )
 
 type Streamer struct {
-	Config         *config.Streamer
+	Config         *config.WildHaiku
 	ConsumerKeys   *oauth.Credentials
 	Token          *oauth.Credentials
 	Client         *oauth.Client
@@ -23,7 +23,7 @@ type Streamer struct {
 	ProcessChannel chan *Tweet
 }
 
-func NewStreamer(cfg *config.Streamer) *Streamer {
+func NewStreamer(cfg *config.WildHaiku) *Streamer {
 	processChannel := make(chan *Tweet, 10000)
 	consumerKeys := oauth.Credentials{
 		Token:  cfg.ConsumerKey,
@@ -76,9 +76,7 @@ func (ts *Streamer) TweetFromInput(reader *bufio.Reader) (*Tweet, error) {
 		return nil, err
 	}
 	if len(inBytes) == 0 {
-		// return nil and keep going
-		log.Printf("Got no bytes")
-		return nil, nil
+		return nil, errors.Errorf("No bytes received")
 	}
 	if string(inBytes) == "\r\n" {
 		// return nil and keep going
@@ -88,6 +86,7 @@ func (ts *Streamer) TweetFromInput(reader *bufio.Reader) (*Tweet, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error when trying to read from tweet stream")
 	}
+
 	return ts.ParseTweet(inBytes)
 }
 

@@ -9,7 +9,7 @@ import (
 )
 
 func TestStreamer(t *testing.T) {
-	testCfg := config.Streamer{}
+	testCfg := config.WildHaiku{}
 	s := NewStreamer(&testCfg)
 	tweetFile, err := os.Open("sampletweets.json")
 	if err != nil {
