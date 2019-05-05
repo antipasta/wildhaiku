@@ -19,16 +19,18 @@ func (h Haiku) ToStringArray() [3]string {
 		haikuLine := bytes.Buffer{}
 		for wordIndex := range line {
 			if line[wordIndex].Syllables == 0 && IsSymbolOrPunct(&line[wordIndex].Word) {
+				haikuLine.WriteString(line[wordIndex].Word.Text)
 				continue
 			}
-			if wordIndex > 0 && haikuLine.Len() > 0 {
-				haikuLine.WriteString(" ")
+			if wordIndex > 0 && wordIndex < len(line) {
+				prevWord := line[wordIndex-1]
+				if prevWord.Syllables > 0 || line[wordIndex].Syllables > 0 {
+					// Works in most cases, will need refactor for proper spacing for quotes
+					haikuLine.WriteString(" ")
+				}
 			}
 			haikuLine.WriteString(line[wordIndex].Word.Text)
 
-			if wordIndex+1 < len(line) && line[wordIndex+1].Syllables == 0 && IsSymbolOrPunct(&line[wordIndex+1].Word) {
-				haikuLine.WriteString(line[wordIndex+1].Word.Text)
-			}
 		}
 		haikuLines[lineIndex] = haikuLine.String()
 	}

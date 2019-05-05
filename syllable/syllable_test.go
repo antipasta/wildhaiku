@@ -49,8 +49,13 @@ func TestProblematicHaikus(t *testing.T) {
 			Corpus:         cmu,
 		},
 		{
-			Input:          "\"He asked me where I wanted to play and I told him, I want to go to Buffalo.\"\n\nWe're pumped to have you, Cody. #BillsMafia https://t.co/kLZ6ddIoLo",
-			ExpectedOutput: [3]string{"He asked me where I", "wanted to play and I told", "him, I want to go"},
+			Input:          "How many cans of tuna are ok to eat at once? They’re so small...",
+			ExpectedOutput: [3]string{"How many cans of", "tuna are ok to eat", "at once? They're so small..."},
+			Corpus:         cmu,
+		},
+		{
+			Input:          "Punctuation test; Hope & test that it works right??? Only time, will tell!!!",
+			ExpectedOutput: [3]string{"Punctuation test;", "Hope & test that it works right???", "Only time, will tell!!!"},
 			Corpus:         cmu,
 		},
 	}
