@@ -1,3 +1,5 @@
+/*Package config contains the configuration necessary to run the wildhaiku application
+ */
 package config
 
 import (

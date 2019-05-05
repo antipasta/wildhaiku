@@ -1,3 +1,5 @@
+/*Package twitter is used for interacting with tweet streams from Twitter's Public API
+ */
 package twitter
 
 // Tweet is a representation of a subset of fields of a Tweet from Twitter's API

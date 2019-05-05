@@ -1,3 +1,5 @@
+/*Package haiku is used for processing Tweets and parsing out found Haikus
+ */
 package haiku
 
 import (

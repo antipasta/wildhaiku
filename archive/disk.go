@@ -1,3 +1,5 @@
+/*Package archive is used to save Haikus found within Tweets to disk
+ */
 package archive
 
 import (
