@@ -9,11 +9,13 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Output is a Tweet bundled with all found haikus from that tweet, used for outputting to file
 type Output struct {
 	Haikus []syllable.Haiku
 	Tweet  *twitter.Tweet
 }
 
+// Processor reads in tweets on a channel, and outputs them to an output channel
 type Processor struct {
 	inputChannel  <-chan *twitter.Tweet
 	outputChannel chan<- *Output
@@ -21,6 +23,7 @@ type Processor struct {
 	corpus        *syllable.CMUCorpus
 }
 
+// NewProcessor creates a new instance of the processor class, using specified input and output channels
 func NewProcessor(cfg *config.WildHaiku, tweetIn <-chan *twitter.Tweet, processedOut chan<- *Output) (*Processor, error) {
 	cmu, err := syllable.LoadCMUCorpus(cfg.CorpusPath)
 	if err != nil {
@@ -33,6 +36,7 @@ func NewProcessor(cfg *config.WildHaiku, tweetIn <-chan *twitter.Tweet, processe
 	}, nil
 }
 
+// ProcessLoop reads in Tweets on input channel, and if any haikus are found,outputs an Output object  on the output channel
 func (p *Processor) ProcessLoop() error {
 	for tweet := range p.inputChannel {
 		output := p.process(tweet)
