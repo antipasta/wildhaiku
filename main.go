@@ -1,11 +1,11 @@
 /*Package wildhaiku implements wildhaiku, a utility for:
 
-"""
-  * Reading tweets off of a Public API stream
-  * Parsing out Haikus(one or more sentences where, when combined, are split on lines of 5 syllables, 7 syllables, 5 syllables).
-  * Outputting found haikus and their corresponding Tweets to disk
-"""
-*/
+ * Reading tweets off of a Public API stream
+
+ * Parsing out Haikus(one or more sentences where, when combined, are split on lines of 5 syllables, 7 syllables, 5 syllables).
+
+ * Outputting found haikus and their corresponding Tweets to disk
+ */
 package main
 
 import (
