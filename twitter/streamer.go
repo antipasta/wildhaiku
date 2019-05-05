@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Streamer is responsible for connecting to and reading from a Twitter public API stream
 type Streamer struct {
 	Config         *config.WildHaiku
 	ConsumerKeys   *oauth.Credentials
@@ -23,6 +24,7 @@ type Streamer struct {
 	ProcessChannel chan *Tweet
 }
 
+// NewStreamer returns a twitter.Streamer object
 func NewStreamer(cfg *config.WildHaiku) *Streamer {
 	processChannel := make(chan *Tweet, 10000)
 	consumerKeys := oauth.Credentials{
@@ -49,6 +51,8 @@ func NewStreamer(cfg *config.WildHaiku) *Streamer {
 	}
 	return &ts
 }
+
+// Connect connects to a Twitter public API stream and returns the response for reading
 func (ts *Streamer) Connect() (*http.Response, error) {
 	resp, err := ts.Client.Post(
 		ts.httpClient,
@@ -69,10 +73,11 @@ func (ts *Streamer) Connect() (*http.Response, error) {
 	return resp, nil
 }
 
+// StreamLoop reads off of a JSON stream of public tweets and sends json decoded Tweets to the ProcessChannel
 func (ts *Streamer) StreamLoop(stream io.Reader) error {
 	buf := bufio.NewReader(stream)
 	for {
-		t, err := ts.TweetFromInput(buf)
+		t, err := ts.tweetFromInput(buf)
 		if err != nil {
 			return err
 		}
@@ -83,7 +88,7 @@ func (ts *Streamer) StreamLoop(stream io.Reader) error {
 	}
 }
 
-func (ts *Streamer) TweetFromInput(reader *bufio.Reader) (*Tweet, error) {
+func (ts *Streamer) tweetFromInput(reader *bufio.Reader) (*Tweet, error) {
 	inBytes, err := reader.ReadBytes('\n')
 	if err == io.EOF {
 		return nil, err
@@ -100,10 +105,10 @@ func (ts *Streamer) TweetFromInput(reader *bufio.Reader) (*Tweet, error) {
 		return nil, errors.Wrapf(err, "Error when trying to read from tweet stream")
 	}
 
-	return ts.ParseTweet(inBytes)
+	return ts.parseTweet(inBytes)
 }
 
-func (ts *Streamer) ParseTweet(inBytes []byte) (*Tweet, error) {
+func (ts *Streamer) parseTweet(inBytes []byte) (*Tweet, error) {
 	t := Tweet{}
 	err := json.Unmarshal(inBytes, &t)
 	if err != nil {
