@@ -7,14 +7,16 @@ import (
 	prose "gopkg.in/antipasta/prose.v2"
 )
 
+// Paragraph is a slice of Sentences, used to process an entire tweet looking for Haikus
 type Paragraph []Sentence
 
+// Subdivide attempts to look for haikus, starting from each Sentence in the paragraph slice, and proceeding til end of all further sentences in the slice.
 func (p Paragraph) Subdivide(sylSizes ...int) []Haiku {
 
 	haikuMap := map[string]Haiku{}
 	haikus := []Haiku{}
 	for i := range p {
-		haiku := p[i:].ToCombinedSentence().Subdivide(sylSizes...)
+		haiku := p[i:].toCombinedSentence().Subdivide(sylSizes...)
 		haikuStr := fmt.Sprintf("%s", haiku)
 		if len(haiku) > 0 {
 			if _, exists := haikuMap[haikuStr]; !exists {
@@ -25,7 +27,7 @@ func (p Paragraph) Subdivide(sylSizes ...int) []Haiku {
 	}
 	return haikus
 }
-func (p Paragraph) ToCombinedSentence() Sentence {
+func (p Paragraph) toCombinedSentence() Sentence {
 	combinedSentence := Sentence{}
 	for i := range p {
 		combinedSentence = append(combinedSentence, p[i]...)
@@ -34,6 +36,7 @@ func (p Paragraph) ToCombinedSentence() Sentence {
 
 }
 
+// TotalSyllables returns count of total syllables in Paragraph
 func (p Paragraph) TotalSyllables() int {
 	total := 0
 	for _, sentence := range p {
@@ -42,6 +45,7 @@ func (p Paragraph) TotalSyllables() int {
 	return total
 }
 
+// NewParagraph takes a string as input, runs PreProcess functions on it, and then converts it to a Paragraph(slice of Sentences)
 func (c *CMUCorpus) NewParagraph(sentence string) Paragraph {
 	for _, pFunc := range c.PreProcess {
 		sentence = pFunc(sentence)

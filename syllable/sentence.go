@@ -1,5 +1,6 @@
 package syllable
 
+// Sentence is a slice of words, used for subdividing words when generating a HAiku
 type Sentence []Word
 
 // TotalSyllables counts syllables of all Words in the sentence
