@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"log"
+	"time"
 
 	"github.com/antipasta/wildhaiku/archive"
 	"github.com/antipasta/wildhaiku/config"
@@ -39,11 +40,14 @@ func main() {
 	}
 
 	for resp, err := ts.Connect(); ; {
-		defer resp.Body.Close()
 		if err != nil {
-			log.Fatalf("Got error when connecting to twitter stream: %v", err)
+			resp.Body.Close()
+			log.Printf("Got error when connecting to twitter stream, sleeping and reconnecting: %v", err)
+			time.Sleep(5 * time.Second)
+			continue
 		}
 		err = ts.StreamLoop(resp.Body)
+		resp.Body.Close()
 		if err != nil {
 			log.Printf("Got stream error %+v. Reconnecting", err)
 		}

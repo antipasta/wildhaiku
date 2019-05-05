@@ -25,7 +25,7 @@ type Processor struct {
 
 // NewProcessor creates a new instance of the processor class, using specified input and output channels
 func NewProcessor(cfg *config.WildHaiku, tweetIn <-chan *twitter.Tweet, processedOut chan<- *Output) (*Processor, error) {
-	cmu, err := syllable.LoadCMUCorpus(cfg.CorpusPath)
+	cmu, err := syllable.NewCMUCorpus(cfg.CorpusPath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error loading CMU corpus from %v", cfg.CorpusPath)
 	}

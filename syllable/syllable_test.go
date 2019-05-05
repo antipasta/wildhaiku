@@ -12,7 +12,7 @@ type ExpectedHaiku struct {
 }
 
 func TestProblematicHaikus(t *testing.T) {
-	cmu, err := LoadCMUCorpus("cmudict.dict")
+	cmu, err := NewCMUCorpus("cmudict.dict")
 	if err != nil {
 		t.Errorf("Error loading cmu dictionary %+v", err)
 	}

@@ -10,18 +10,35 @@ import (
 	prose "gopkg.in/antipasta/prose.v2"
 )
 
+// PreProcessFunc is used to transform strings before process
 type PreProcessFunc func(string) string
+type tokenizeFunc func() []prose.Token
 
+// TokenFilterFunc is any function that takes a slice of Tokens and returns a slice of Tokens. Used for filtering out cruft, examples include TrimStartingUnknowns and TrimTrailingUnknowns
+type TokenFilterFunc func([]prose.Token) []prose.Token
+
+// CMUCorpus is used for looking up syllable counts after some preprocessing of string
 type CMUCorpus struct {
 	PreProcess []PreProcessFunc
 	Dict       map[string]int
 }
+
+// Word contains a token and its corresponding syllable count
 type Word struct {
 	Word      prose.Token
 	Syllables int
 }
 
-func LoadCMUCorpus(path string) (*CMUCorpus, error) {
+func (tf tokenizeFunc) filter(filterFuncs ...TokenFilterFunc) []prose.Token {
+	tokens := tf()
+	for _, filterFunc := range filterFuncs {
+		tokens = filterFunc(tokens)
+	}
+	return tokens
+}
+
+// NewCMUCorpus Reads cmu corpus file off disk and converts it to a mapping of word to syllablecount, returning *CMUCorpus
+func NewCMUCorpus(path string) (*CMUCorpus, error) {
 	c := CMUCorpus{Dict: map[string]int{},
 		PreProcess: []PreProcessFunc{html.UnescapeString},
 	}
@@ -54,6 +71,8 @@ func (c *CMUCorpus) countFromPhenomes(phenomes []string) int {
 	return syllables
 
 }
+
+// SyllableCount Returns syllable count of word, errors if word not found
 func (c *CMUCorpus) SyllableCount(word string) (int, error) {
 	lowerWord := strings.ToLower(word)
 	phenomes, exists := c.Dict[lowerWord]
@@ -63,12 +82,14 @@ func (c *CMUCorpus) SyllableCount(word string) (int, error) {
 	return phenomes, nil
 }
 
+// HasSyllableCount Checks if a word is in the cpu corpus and has a syllable count
 func (c *CMUCorpus) HasSyllableCount(word string) bool {
 	lowerWord := strings.ToLower(word)
 	phenomes, exists := c.Dict[lowerWord]
 	return exists && phenomes > 0
 }
 
+// IsSymbolOrPunct Checks if token is a non word or digit character
 func IsSymbolOrPunct(token *prose.Token) bool {
 	if len(token.Text) != 1 {
 		return false
@@ -77,9 +98,7 @@ func IsSymbolOrPunct(token *prose.Token) bool {
 	return len(token.Tag) == 1 || unicode.IsSymbol(char) || unicode.IsPunct(char)
 }
 
-type TokenizeFunc func() []prose.Token
-type TokenFilterFunc func([]prose.Token) []prose.Token
-
+// TrimStartingUnknowns Trims tokens that are not in cmu corpus from start of token slice, returning trimmed slice
 func (c *CMUCorpus) TrimStartingUnknowns(tokens []prose.Token) []prose.Token {
 	for len(tokens) > 0 {
 		if c.HasSyllableCount(tokens[0].Text) || IsSymbolOrPunct(&tokens[0]) {
@@ -90,6 +109,7 @@ func (c *CMUCorpus) TrimStartingUnknowns(tokens []prose.Token) []prose.Token {
 	return tokens
 }
 
+// TrimTrailingUnknowns Trims tokens that are not in cmu corpus from end of token slice, returning trimmed slice
 func (c *CMUCorpus) TrimTrailingUnknowns(tokens []prose.Token) []prose.Token {
 	for len(tokens) > 0 {
 		lastIndex := len(tokens) - 1
@@ -101,14 +121,7 @@ func (c *CMUCorpus) TrimTrailingUnknowns(tokens []prose.Token) []prose.Token {
 	return tokens
 }
 
-func (tf TokenizeFunc) Filter(filterFuncs ...TokenFilterFunc) []prose.Token {
-	tokens := tf()
-	for _, filterFunc := range filterFuncs {
-		tokens = filterFunc(tokens)
-	}
-	return tokens
-}
-
+// NewSentence tokenizes a string, potentially performs filtering, looks up syllable counts, and then returns a Sentence, which is an array of []Words
 func (c *CMUCorpus) NewSentence(sentence string, filters ...TokenFilterFunc) (Sentence, error) {
 	syllableSentence := Sentence{}
 
@@ -120,7 +133,7 @@ func (c *CMUCorpus) NewSentence(sentence string, filters ...TokenFilterFunc) (Se
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error parsing new document %+v", sentence)
 	}
-	for _, v := range TokenizeFunc(sentenceDoc.Tokens).Filter(filters...) {
+	for _, v := range tokenizeFunc(sentenceDoc.Tokens).filter(filters...) {
 		count, err := c.SyllableCount(v.Text)
 		if err != nil {
 			if IsSymbolOrPunct(&v) {
