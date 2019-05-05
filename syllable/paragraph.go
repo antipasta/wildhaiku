@@ -1,3 +1,5 @@
+/*Package syllable contains classes and functions for parsing text, getting counts of syllables, and returning text subdivided by specific syllable counts
+ */
 package syllable
 
 import (

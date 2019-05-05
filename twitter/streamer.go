@@ -1,3 +1,5 @@
+/*Package twitter contains utilities for connecting and parsing Tweets from a Twitter JSON data stream
+ */
 package twitter
 
 import (
