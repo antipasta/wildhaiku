@@ -2,6 +2,7 @@ package syllable
 
 type Sentence []Word
 
+// TotalSyllables counts syllables of all Words in the sentence
 func (s Sentence) TotalSyllables() int {
 	total := 0
 	for _, word := range s {
@@ -10,6 +11,7 @@ func (s Sentence) TotalSyllables() int {
 	return total
 }
 
+// Subdivide splits a Sentence into a slice of Sentences, splitting on syllable boundaries that are specified in sylSizes, and returning a Haiku
 func (s Sentence) Subdivide(sylSizes ...int) Haiku {
 	curSentence := Haiku{}
 	wordIndex := 0

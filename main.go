@@ -39,7 +39,7 @@ func main() {
 		go haikuProcessor.ProcessLoop()
 	}
 
-	for resp, err := ts.Connect(); ; {
+	for resp, err := ts.Connect(); ; resp, err = ts.Connect() {
 		if err != nil {
 			resp.Body.Close()
 			log.Printf("Got error when connecting to twitter stream, sleeping and reconnecting: %v", err)
