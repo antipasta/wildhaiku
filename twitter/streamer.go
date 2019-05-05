@@ -39,11 +39,24 @@ func NewStreamer(cfg *config.WildHaiku) *Streamer {
 		TokenRequestURI:               "https://api.twitter.com/oauth/access_token",
 		Credentials:                   consumerKeys,
 	}
-	ts := Streamer{Config: cfg, ConsumerKeys: &consumerKeys, Token: &token, Client: &client, httpClient: &http.Client{}, ProcessChannel: processChannel}
+	ts := Streamer{
+		Config:         cfg,
+		ConsumerKeys:   &consumerKeys,
+		Token:          &token,
+		Client:         &client,
+		httpClient:     &http.Client{},
+		ProcessChannel: processChannel,
+	}
 	return &ts
 }
 func (ts *Streamer) Connect() (*http.Response, error) {
-	resp, err := ts.Client.Post(ts.httpClient, ts.Token, "https://stream.twitter.com/1.1/statuses/filter.json", url.Values{"lang": []string{"en"}, "track": ts.Config.TrackingKeywords, "tweet_mode": []string{"extended"}})
+	resp, err := ts.Client.Post(
+		ts.httpClient,
+		ts.Token,
+		"https://stream.twitter.com/1.1/statuses/filter.json",
+		url.Values{"lang": []string{"en"},
+			"track":      ts.Config.TrackingKeywords,
+			"tweet_mode": []string{"extended"}})
 	if err != nil {
 		return nil, errors.Wrapf(err, "Caught error when connecting to twitter stream")
 	}
