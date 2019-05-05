@@ -23,11 +23,8 @@ func (h Haiku) ToStringArray() [3]string {
 				continue
 			}
 			if wordIndex > 0 && wordIndex < len(line) {
-				prevWord := line[wordIndex-1]
-				if prevWord.Syllables > 0 || line[wordIndex].Syllables > 0 {
-					// Works in most cases, will need refactor for proper spacing for quotes
-					haikuLine.WriteString(" ")
-				}
+				// Works in most cases, will need refactor for proper spacing for quotes
+				haikuLine.WriteString(" ")
 			}
 			haikuLine.WriteString(line[wordIndex].Word.Text)
 
