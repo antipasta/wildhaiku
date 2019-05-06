@@ -104,7 +104,7 @@ func (da *DiskArchiver) OutputLoop() error {
 		return errors.Wrapf(err, "Error creating file %s", da.outFilePath)
 	}
 	defer da.outFile.Close()
-	if os.Lstat(da.symlinkPath); err == nil {
+	if _, err := os.Lstat(da.symlinkPath); err == nil {
 		err = os.Remove(da.symlinkPath)
 		if err != nil {
 			return errors.Wrapf(err, "Error removing symlink %v", da.symlinkPath)
