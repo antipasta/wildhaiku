@@ -10,6 +10,6 @@ Some examples of found haikus during development of this project can be seen at 
 
 
 To run:
-go get github.com/antipasta/wildhaiku
-from repo root: go build
-./wildhaiku --config config.json
+* go get github.com/antipasta/wildhaiku
+* from repo root: go build
+* ./wildhaiku --config config.json
