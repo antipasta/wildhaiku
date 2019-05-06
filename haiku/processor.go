@@ -3,8 +3,6 @@
 package haiku
 
 import (
-	"log"
-
 	"github.com/antipasta/wildhaiku/config"
 	"github.com/antipasta/wildhaiku/syllable"
 	"github.com/antipasta/wildhaiku/twitter"
@@ -45,9 +43,6 @@ func (p *Processor) ProcessLoop() error {
 		if output == nil {
 			// Could not find haiku
 			continue
-		}
-		if len(p.inputChannel) > 0 {
-			log.Printf("Channel size is %+v", len(p.inputChannel))
 		}
 		if len(output.Haikus) > 0 {
 			p.outputChannel <- output
