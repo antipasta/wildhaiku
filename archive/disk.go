@@ -5,6 +5,7 @@ package archive
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -71,7 +72,7 @@ func (da *DiskArchiver) output(out *haiku.Output) error {
 	out.Haikus = filteredHaikus
 	bytes, err := json.Marshal(out)
 	if err != nil {
-		panic(err)
+		return errors.Wrapf(err, "Error marshalling json for %+v", out)
 	}
 	_, err = da.OutFile.WriteString(fmt.Sprintf("%s\n", string(bytes)))
 	if err != nil {
@@ -107,7 +108,10 @@ func (da *DiskArchiver) OutputLoop() error {
 		return err
 	}
 	for tweet := range da.ArchiveChannel {
-		da.output(tweet)
+		err = da.output(tweet)
+		if err != nil {
+			log.Printf("Got error %v when saving tweet %+v to disk, skipping", err, tweet)
+		}
 	}
 	return nil
 }
