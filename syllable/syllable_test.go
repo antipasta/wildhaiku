@@ -1,7 +1,6 @@
 package syllable
 
 import (
-	"log"
 	"testing"
 )
 
@@ -11,12 +10,56 @@ type ExpectedHaiku struct {
 	Corpus         *CMUCorpus
 }
 
+func TestParagraph(t *testing.T) {
+	cmu, err := NewCMUCorpus("cmudict.dict")
+	if err != nil {
+		t.Errorf("Error loading cmu dictionary %+v", err)
+	}
+	p, err := cmu.NewParagraph("This is a haiku. Another sentence, cool test. Good time had by all")
+	if err != nil {
+		t.Errorf("Error creating paragraph %s", err)
+	}
+	if len(p) != 3 {
+		t.Errorf("Paragraph should be of length 3")
+	}
+	if p.TotalSyllables() != 17 {
+		t.Errorf("Paragraph syllables should be 17")
+	}
+	errorParagraph, err := cmu.NewParagraph("An unknown word, argblarg. Another sentence, cool test. Good time had by all")
+	if err == nil {
+		t.Errorf("Should have gotten an error when creating a paragraph with an unknown word in the middle")
+	}
+	if len(errorParagraph) > 0 {
+		t.Errorf("Should have gotten a paragraph with length 0 since an unknown word is in the middle of the text")
+	}
+}
+
+func TestSentence(t *testing.T) {
+	cmu, err := NewCMUCorpus("cmudict.dict")
+	if err != nil {
+		t.Errorf("Error loading cmu dictionary %+v", err)
+	}
+	unknownToken, err := cmu.NewSentence("What a cool sentence. #wow")
+	if err == nil {
+		t.Errorf("Should get an error due to unknown trailing token")
+	}
+	if len(unknownToken) != 0 {
+		t.Errorf("Should get an empty sentence due to unknown trailing token")
+	}
+	trimmed, err := cmu.NewSentence("@someone What a cool sentence. #wow", cmu.TrimStartingUnknowns, cmu.TrimTrailingUnknowns)
+	if err != nil {
+		t.Errorf("Should get no error since unknown tokens were trimmed, got %s", err)
+	}
+	if trimmed.TotalSyllables() != 5 {
+		t.Errorf("Should get 5 syllables for trimmed sentence")
+	}
+}
+
 func TestProblematicHaikus(t *testing.T) {
 	cmu, err := NewCMUCorpus("cmudict.dict")
 	if err != nil {
 		t.Errorf("Error loading cmu dictionary %+v", err)
 	}
-	log.Printf("Loaded corpus")
 	cases := []ExpectedHaiku{
 		{
 			Input:          "@startingjunk #hi testing a trim of both starting and trailing junk in the same sentence #devlyfe",
