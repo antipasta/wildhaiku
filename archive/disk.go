@@ -43,14 +43,28 @@ var suffixBlacklist = map[string]bool{
 // DiskArchiver receives *haiku.Output over a channel and writes to disk
 type DiskArchiver struct {
 	ArchiveChannel chan *haiku.Output
-	OutFile        *os.File
+	outFile        *os.File
+	outFilePath    string
+	symlinkPath    string
 	Config         *config.WildHaiku
 }
 
-// NewDiskArchiver creates an instance of DiskArchiver
+// NewDiskArchiver creates an instance of DiskArchiver, errors if it cannot access path specified in config.OutputPath
 func NewDiskArchiver(cfg *config.WildHaiku) (*DiskArchiver, error) {
 	archiveChan := make(chan *haiku.Output, 10000)
-	return &DiskArchiver{Config: cfg, ArchiveChannel: archiveChan}, nil
+	now := time.Now().UTC()
+	fileName := fmt.Sprintf("haiku_%s.json", now.Format(time.RFC3339))
+	absOutPath, err := filepath.Abs(cfg.OutputPath)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Could not determine absolute path for %s", absOutPath)
+	}
+	if _, err := os.Stat(absOutPath); err != nil {
+		return nil, errors.Wrapf(err, "Error accessing output file path %s", absOutPath)
+	}
+
+	filePath := filepath.Join(absOutPath, fileName)
+	symLink := filepath.Join(absOutPath, "current.json")
+	return &DiskArchiver{Config: cfg, ArchiveChannel: archiveChan, outFilePath: filePath, symlinkPath: symLink}, nil
 }
 
 func (da *DiskArchiver) output(out *haiku.Output) error {
@@ -75,43 +89,32 @@ func (da *DiskArchiver) output(out *haiku.Output) error {
 	if err != nil {
 		return errors.Wrapf(err, "Error marshalling json for %+v", out)
 	}
-	_, err = da.OutFile.WriteString(fmt.Sprintf("%s\n", string(bytes)))
+	_, err = da.outFile.WriteString(fmt.Sprintf("%s\n", string(bytes)))
 	if err != nil {
-		return errors.Wrapf(err, "Error writing to file %s", da.OutFile.Name())
+		return errors.Wrapf(err, "Error writing to file %s", da.outFile.Name())
 	}
 	return nil
 }
 
 //OutputLoop writes haiku.Output to disk, in a timestampped file based on when the function is first entered. Also creates a symlink current.json pointing at the file being written to
 func (da *DiskArchiver) OutputLoop() error {
-	now := time.Now().UTC()
-	fileName := fmt.Sprintf("haiku_%s.json", now.Format(time.RFC3339))
-	absOutPath, err := filepath.Abs(da.Config.OutputPath)
+	var err error
+	da.outFile, err = os.Create(da.outFilePath)
 	if err != nil {
-		return errors.Wrapf(err, "Could not create absolute path for %s", absOutPath)
+		return errors.Wrapf(err, "Error creating file %s", da.outFilePath)
 	}
-	if _, err := os.Stat(absOutPath); err != nil {
-		return errors.Wrapf(err, "Error accessing output file path %s", absOutPath)
-	}
-
-	filePath := filepath.Join(absOutPath, fileName)
-	symLink := filepath.Join(absOutPath, "current.json")
-	da.OutFile, err = os.Create(filePath)
-	log.Printf("Writing to file %s (and symlink %s)", filePath, symLink)
-	defer da.OutFile.Close()
-	if err != nil {
-		return errors.Wrapf(err, "Error creating file %s", filePath)
-	}
-	if os.Lstat(symLink); err == nil {
-		err = os.Remove(symLink)
+	defer da.outFile.Close()
+	if os.Lstat(da.symlinkPath); err == nil {
+		err = os.Remove(da.symlinkPath)
 		if err != nil {
-			return errors.Wrapf(err, "Error removing symlink %v", symLink)
+			return errors.Wrapf(err, "Error removing symlink %v", da.symlinkPath)
 		}
 	}
-	err = os.Symlink(filePath, symLink)
+	err = os.Symlink(da.outFilePath, da.symlinkPath)
 	if err != nil {
 		return err
 	}
+	log.Printf("Writing to file %s (and symlink %s)", da.outFilePath, da.symlinkPath)
 	for tweet := range da.ArchiveChannel {
 		err = da.output(tweet)
 		if err != nil {
