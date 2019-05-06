@@ -58,10 +58,11 @@ func (da *DiskArchiver) output(out *haiku.Output) error {
 		return nil
 	}
 	filteredHaikus := []syllable.Haiku{}
-	for i, foundHaiku := range out.Haikus {
+	for _, foundHaiku := range out.Haikus {
 		if !suffixBlacklist[strings.ToLower(foundHaiku.FinalWord())] {
 			filteredHaikus = append(filteredHaikus, foundHaiku)
-			color.Cyan.Printf("%d. %s\n\n", i+1, foundHaiku.String())
+			log.Printf("https://twitter.com/%s/status/%s", out.Tweet.User.ScreenName, out.Tweet.IDStr)
+			color.Cyan.Printf("%s\n\n", foundHaiku.String())
 		}
 
 	}

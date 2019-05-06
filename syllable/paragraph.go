@@ -4,8 +4,8 @@ package syllable
 
 import (
 	"fmt"
-	"log"
 
+	"github.com/pkg/errors"
 	prose "gopkg.in/antipasta/prose.v2"
 )
 
@@ -48,7 +48,7 @@ func (p Paragraph) TotalSyllables() int {
 }
 
 // NewParagraph takes a string as input, runs PreProcess functions on it, and then converts it to a Paragraph(slice of Sentences)
-func (c *CMUCorpus) NewParagraph(sentence string) Paragraph {
+func (c *CMUCorpus) NewParagraph(sentence string) (Paragraph, error) {
 	for _, pFunc := range c.PreProcess {
 		sentence = pFunc(sentence)
 	}
@@ -59,7 +59,7 @@ func (c *CMUCorpus) NewParagraph(sentence string) Paragraph {
 		prose.WithTokenization(false),
 		prose.UsingModel(nil))
 	if err != nil {
-		log.Fatal(err)
+		return paragraph, err
 	}
 	sentences := sentenceDoc.Sentences()
 	for i, sentence := range sentences {
@@ -76,13 +76,13 @@ func (c *CMUCorpus) NewParagraph(sentence string) Paragraph {
 			//log.Printf("Got error when parsing sentence syllables %v", err)
 			if paragraph.TotalSyllables() >= 17 {
 				// Without this sentence we have more than enough to attempt to find a haiku, return what we found so far
-				return paragraph
+				return paragraph, nil
 			}
 			// we didnt get enough for a potential hiaku, bail
-			return Paragraph{}
+			return Paragraph{}, errors.Wrapf(err, "Could not form haiku from given input")
 		}
 		paragraph = append(paragraph, sentenceObj)
 	}
-	return paragraph
+	return paragraph, nil
 
 }

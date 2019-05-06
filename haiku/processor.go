@@ -42,6 +42,10 @@ func NewProcessor(cfg *config.WildHaiku, tweetIn <-chan *twitter.Tweet, processe
 func (p *Processor) ProcessLoop() error {
 	for tweet := range p.inputChannel {
 		output := p.process(tweet)
+		if output == nil {
+			// Could not find haiku
+			continue
+		}
 		if len(p.inputChannel) > 0 {
 			log.Printf("Channel size is %+v", len(p.inputChannel))
 		}
@@ -54,7 +58,10 @@ func (p *Processor) ProcessLoop() error {
 }
 
 func (p *Processor) process(t *twitter.Tweet) *Output {
-	paragraph := p.corpus.NewParagraph(t.FullText())
+	paragraph, err := p.corpus.NewParagraph(t.FullText())
+	if err != nil {
+		return nil
+	}
 	foundHaikus := paragraph.Subdivide(5, 7, 5)
 	haikuStrings := [][3]string{}
 	for _, haiku := range foundHaikus {
