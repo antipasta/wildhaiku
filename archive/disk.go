@@ -86,17 +86,21 @@ func (da *DiskArchiver) output(out *haiku.Output) error {
 func (da *DiskArchiver) OutputLoop() error {
 	now := time.Now().UTC()
 	fileName := fmt.Sprintf("haiku_%s.json", now.Format(time.RFC3339))
-	filePath := filepath.Join(da.Config.OutputPath, fileName)
-	symLink := filepath.Join(da.Config.OutputPath, "current.json")
-	var err error
+	absOutPath, err := filepath.Abs(da.Config.OutputPath)
+	if err != nil {
+		return errors.Wrapf(err, "Could not create absolute path for %s", absOutPath)
+	}
+	if _, err := os.Stat(absOutPath); err != nil {
+		return errors.Wrapf(err, "Error accessing output file path %s", absOutPath)
+	}
+
+	filePath := filepath.Join(absOutPath, fileName)
+	symLink := filepath.Join(absOutPath, "current.json")
 	da.OutFile, err = os.Create(filePath)
+	log.Printf("Writing to file %s (and symlink %s)", filePath, symLink)
 	defer da.OutFile.Close()
 	if err != nil {
 		return errors.Wrapf(err, "Error creating file %s", filePath)
-	}
-	absPath, err := filepath.Abs(filePath)
-	if err != nil {
-		return err
 	}
 	if os.Lstat(symLink); err == nil {
 		err = os.Remove(symLink)
@@ -104,7 +108,7 @@ func (da *DiskArchiver) OutputLoop() error {
 			return errors.Wrapf(err, "Error removing symlink %v", symLink)
 		}
 	}
-	err = os.Symlink(absPath, symLink)
+	err = os.Symlink(filePath, symLink)
 	if err != nil {
 		return err
 	}

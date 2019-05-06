@@ -41,10 +41,20 @@ func main() {
 		log.Fatalf("Error initializing haiku processor: %v", err)
 	}
 
-	go diskArchiver.OutputLoop()
+	go func() {
+		err := diskArchiver.OutputLoop()
+		if err != nil {
+			log.Fatalf("Error from disk archiver: %v", err)
+		}
+	}()
 
 	for i := 0; i < cfg.ProcessWorkerCount; i++ {
-		go haikuProcessor.ProcessLoop()
+		go func(i int) {
+			err := haikuProcessor.ProcessLoop()
+			if err != nil {
+				log.Fatalf("Error from Process Worker %d: %v", i, err)
+			}
+		}(i)
 	}
 
 	for {
