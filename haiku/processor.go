@@ -58,9 +58,5 @@ func (p *Processor) process(t *twitter.Tweet) *Output {
 		return nil
 	}
 	foundHaikus := paragraph.Subdivide(5, 7, 5)
-	haikuStrings := [][3]string{}
-	for _, haiku := range foundHaikus {
-		haikuStrings = append(haikuStrings, haiku.ToStringArray())
-	}
 	return &Output{Tweet: t, Haikus: foundHaikus}
 }
