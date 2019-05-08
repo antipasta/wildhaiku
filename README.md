@@ -8,3 +8,8 @@ GoDoc can be found at https://godoc.org/github.com/antipasta/wildhaiku/
 
 Some examples of found haikus during development of this project can be seen at https://twitter.com/awildhaiku
 
+
+To run:
+* go get github.com/antipasta/wildhaiku
+* from repo root: go build
+* ./wildhaiku --config config.json
